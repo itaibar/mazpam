@@ -1,0 +1,12 @@
+{
+  "name": "mazpam",
+  "version": "1.0.0",
+  "description": "Ticketing system for place management",
+  "type": "module",
+  "scripts": {
+    "server": "node server.mjs"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.0.0"
+  }
+}

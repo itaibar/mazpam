@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מצפ״ם - מערכת תקלות</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Rubik', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 20px;
+      direction: rtl;
+      background: linear-gradient(135deg, #2a2040 0%, #1e1835 50%, #252040 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    #particles-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      text-align: center;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 2.8em;
+      font-weight: 700;
+      margin-bottom: 0;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #fff 0%, #ffcc80 50%, #e67e22 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 2px 8px rgba(230,126,34,0.3));
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.3s;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.8);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      font-family: 'Rubik', inherit;
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-btn:hover {
+      transform: translateY(-2px);
+      background: rgba(255,255,255,0.14);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 20px rgba(230,126,34,0.3);
+      font-weight: 600;
+    }
+
+    .content {
+      background: white;
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: 0 10px 40px rgba(200,120,0,0.08);
+      min-height: 500px;
+      border: 1px solid rgba(230,126,34,0.1);
+      color: #333;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 0;
+    }
+
+    label {
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #666;
+      display: block;
+      font-size: 14px;
+    }
+
+    h2 {
+      color: #c65d00;
+      font-weight: 700;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: 'Rubik', inherit;
+      transition: all 0.25s;
+      direction: rtl;
+      text-align: right;
+      height: 48px;
+      background: #fafafa;
+      color: #333;
+    }
+
+    textarea {
+      height: auto;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #bbb;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #e67e22;
+      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.1);
+      background: #fff;
+    }
+
+    input:disabled {
+      background: #f5f5f5;
+      color: #999;
+      border-color: #e8e8e8;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px 12px 40px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: 'Rubik', inherit;
+      transition: all 0.25s;
+      background-color: #fafafa;
+      color: #333;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      direction: rtl;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='%23e67e22' d='M6 9L1 4h10z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: left 14px center;
+      background-size: 12px;
+      padding-left: 36px;
+      height: 48px;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #e67e22;
+      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.1);
+      background-color: #fff;
+    }
+
+    select:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+      opacity: 0.7;
+      color: #999;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+    }
+
+    form > .form-row,
+    form > .form-group {
+      margin-bottom: 16px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-family: 'Rubik', inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+      color: white;
+      width: 100%;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.15) 100%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(230, 126, 34, 0.4);
+    }
+
+    .btn-primary:hover::after {
+      opacity: 1;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border-right: 4px solid #4caf50;
+      border-radius: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    .alert-error {
+      background: #fce4ec;
+      color: #c62828;
+      border-right: 4px solid #ef5350;
+      border-radius: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tickets Table */
+    .tickets-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 6px;
+      font-size: 14px;
+    }
+
+    .tickets-table th {
+      background: transparent;
+      padding: 10px 14px;
+      text-align: right;
+      font-weight: 600;
+      color: #b0855a;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-bottom: none;
+      white-space: nowrap;
+    }
+
+    .tickets-table td {
+      padding: 14px 14px;
+      border-bottom: none;
+      vertical-align: middle;
+      color: #555;
+    }
+
+    .tickets-table td:first-child {
+      border-radius: 0 10px 10px 0;
+    }
+
+    .tickets-table td:last-child {
+      border-radius: 10px 0 0 10px;
+    }
+
+    .tickets-table tbody tr {
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+
+    .tickets-table tbody tr:hover {
+      background: #fff3e6;
+      box-shadow: 0 4px 15px rgba(230,126,34,0.08);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      letter-spacing: 0.3px;
+    }
+
+    .status-badge-open     { background: #eeeeee; color: #616161; }
+    .status-badge-progress { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+    .status-badge-hold     { background: #fce4ec; color: #c62828; border: 1px solid #ef9a9a; }
+    .status-badge-closed   { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+
+    .page-btn {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      background: white;
+      color: #777;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Rubik', inherit;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover {
+      border-color: #e67e22;
+      color: #e67e22;
+      background: #fef5ec;
+    }
+
+    .page-btn.active {
+      background: #e67e22;
+      color: white;
+      border-color: #e67e22;
+      box-shadow: 0 2px 12px rgba(230, 126, 34, 0.4);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-info {
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 36px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+      animation: modalIn 0.25s ease;
+      border: 1px solid rgba(230,126,34,0.1);
+      color: #333;
+    }
+
+    .modal-header {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #c65d00;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .modal-form > .form-row,
+    .modal-form > .form-group {
+      margin-bottom: 16px;
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-start;
+      margin-top: 20px;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white;
+      border-radius: 10px;
+    }
+
+    .btn-danger:hover {
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #555;
+      border-radius: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #eee;
+      transform: translateY(-1px);
+    }
+
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.08);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-icon-btn:hover {
+      transform: scale(1.1);
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .nav-logged-in {
+      background: rgba(76,175,80,0.2);
+      border-color: rgba(76,175,80,0.3);
+    }
+
+    .btn-logout {
+      padding: 8px 18px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      background: rgba(255,80,80,0.15);
+      color: #ff8a80;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Rubik', inherit;
+      transition: all 0.3s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255,80,80,0.25);
+      border-color: rgba(255,80,80,0.3);
+    }
+
+    .login-popup {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .login-popup.show {
+      display: flex;
+    }
+
+    .login-popup-content {
+      background: white;
+      border-radius: 20px;
+      padding: 24px 30px 30px;
+      max-width: 380px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+      animation: modalIn 0.25s ease;
+      border: 1px solid rgba(230,126,34,0.1);
+      color: #333;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Loading Screen */
+    .loading-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #2a2040 0%, #1e1835 50%, #252040 100%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+
+    .loading-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loading-logo {
+      font-size: 3em;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 12px;
+      opacity: 0;
+      animation: loadFadeIn 0.6s ease 0.2s forwards;
+    }
+
+    .loading-text {
+      color: rgba(255,255,255,0.4);
+      font-size: 13px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: loadFadeIn 0.5s ease 0.5s forwards;
+    }
+
+    .loading-bar-track {
+      width: 280px;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      overflow: hidden;
+      opacity: 0;
+      animation: loadFadeIn 0.4s ease 0.6s forwards;
+      position: relative;
+    }
+
+    .loading-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #d35400, #e67e22, #f5a623);
+      border-radius: 4px;
+      animation: loadBar 2s cubic-bezier(0.4, 0, 0.2, 1) 0.7s forwards;
+      box-shadow: 0 0 12px rgba(230, 126, 34, 0.5), 0 0 4px rgba(230, 126, 34, 0.8);
+    }
+
+    .loading-percent {
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+      margin-top: 14px;
+      letter-spacing: 1px;
+      opacity: 0;
+      animation: loadFadeIn 0.4s ease 0.8s forwards;
+    }
+
+    @keyframes loadFadeIn {
+      to { opacity: 1; }
+    }
+
+    @keyframes loadBar {
+      0% { width: 0%; }
+      20% { width: 15%; }
+      50% { width: 55%; }
+      80% { width: 85%; }
+      100% { width: 100%; }
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      form > .form-group[style],
+      .modal-form > .form-group[style] {
+        max-width: 100% !important;
+      }
+
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      .tabs {
+        flex-direction: column;
+      }
+
+      .tab-btn {
+        width: 100%;
+      }
+
+      .table-wrapper {
+        overflow-x: auto;
+      }
+
+      .modal-content {
+        max-width: 95%;
+      }
+
+      .content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <img src="/Pakar.svg" alt="logo" style="height: 80px; margin-bottom: 16px; opacity: 0; animation: loadFadeIn 0.5s ease 0.1s forwards; filter: drop-shadow(0 2px 10px rgba(230,126,34,0.4));">
+    <div class="loading-logo">מצפ״ם</div>
+    <div class="loading-text">מערכת תקלות</div>
+    <div class="loading-bar-track">
+      <div class="loading-bar-fill" id="loadingBarFill"></div>
+    </div>
+    <div class="loading-percent" id="loadingPercent">0%</div>
+  </div>
+
+  <canvas id="particles-canvas"></canvas>
+
+  <div class="container">
+    <header>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+        <img src="/Pakar.svg" alt="logo" style="height: 60px; filter: drop-shadow(0 2px 6px rgba(230,126,34,0.3));">
+        <h1>מצפ״ם - מערכת תקלות</h1>
+      </div>
+    </header>
+
+    <nav class="navbar">
+      <div class="nav-right">
+        <!-- Not logged in -->
+        <button id="loginBtn" class="nav-icon-btn" onclick="toggleLoginPopup()">
+          <img src="/User-admin-gear.svg" alt="admin" style="width:36px; height:36px;">
+        </button>
+        <!-- Logged in -->
+        <div id="adminNav" style="display: none; gap: 10px; align-items: center;">
+          <button class="tab-btn" :class="{ active: currentTab === 1 }" onclick="switchTab(1)" id="adminTabBtn" style="display:none;">ניהול</button>
+          <button class="btn-logout" onclick="adminLogout()">התנתק</button>
+        </div>
+      </div>
+      <div>
+        <button class="tab-btn active" onclick="switchTab(0)" id="createTabBtn" style="display:none;">פתיחת תקלה</button>
+      </div>
+    </nav>
+
+    <!-- Login Popup -->
+    <div id="loginPopup" class="login-popup" onclick="if(event.target===this) toggleLoginPopup()">
+      <div class="login-popup-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3>כניסת מנהל</h3>
+          <button onclick="toggleLoginPopup()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999;">✕</button>
+        </div>
+        <form onsubmit="adminLogin(event)">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>שם משתמש</label>
+            <input type="text" id="adminUser" required placeholder="שם משתמש">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label>סיסמה</label>
+            <input type="password" id="adminPass" required placeholder="סיסמה">
+          </div>
+          <div id="loginError" class="alert alert-error" style="margin-bottom: 12px;"></div>
+          <button type="submit" class="btn-primary">כניסה</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Messages -->
+      <div id="successMsg" class="alert alert-success"></div>
+      <div id="errorMsg" class="alert alert-error"></div>
+
+      <!-- Tab 0: Create Ticket -->
+      <div class="tab-content active">
+        <h2 style="margin-bottom: 20px;">פתיחת תקלה חדשה</h2>
+        <form onsubmit="submitTicket(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>שם מלא *</label>
+              <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+              <label>טלפון מטכל״י</label>
+              <input type="text" id="phone" maxlength="4" pattern="\d{4}" inputmode="numeric" placeholder="4 ספרות">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>מכלול *</label>
+              <select id="department" required>
+                <option value="">בחר מכלול</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>סביבה *</label>
+              <select id="environment" required>
+                <option value="">בחר סביבה</option>
+                <option value="סודי">סודי</option>
+                <option value="סודי ביותר">סודי ביותר</option>
+                <option value="סודי ביותר (מודיעין)">סודי ביותר (מודיעין)</option>
+                <option value="שחור-זהב">שחור-זהב</option>
+                <option value="שמור">שמור</option>
+                <option value="בלמ״ס">בלמ״ס</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="max-width: calc(50% - 8px);">
+            <label>סוג ציוד *</label>
+            <select id="equipmentType" required>
+              <option value="">בחר סוג ציוד</option>
+              <option value="טלוויזיה">טלוויזיה</option>
+              <option value="מחשב">מחשב</option>
+              <option value="מסך מחשב">מסך מחשב</option>
+              <option value="טלפון אדום">טלפון אדום</option>
+              <option value="טלפון שחור">טלפון שחור</option>
+              <option value="מדפסת">מדפסת</option>
+              <option value="מקלדת">מקלדת</option>
+              <option value="עכבר">עכבר</option>
+              <option value="VC">VC</option>
+              <option value="רמקולים">רמקולים</option>
+              <option value="UC">UC</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>כותרת בעיה *</label>
+            <input type="text" id="subject" required placeholder="תיאור קצר של הבעיה">
+          </div>
+
+          <div class="form-group">
+            <label>תיאור מלא *</label>
+            <textarea id="description" required placeholder="תיאור מפורט של הבעיה או הבקשה"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary">שלח כרטיס</button>
+        </form>
+      </div>
+
+      <!-- Tab 1: Admin (only visible when logged in) -->
+      <div class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <h2>ניהול תקלות</h2>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label style="margin: 0; font-size: 14px;">סינון:</label>
+            <select id="statusFilter" onchange="currentPage=1; renderAdminTab()" style="height: 40px; min-width: 140px;">
+              <option value="">הכל</option>
+              <option value="פתוח">פתוח</option>
+              <option value="בעבודה">בעבודה</option>
+              <option value="בהמתנה">בהמתנה</option>
+              <option value="סגור">סגור</option>
+            </select>
+            <button class="btn-secondary" onclick="togglePeopleModal()" style="padding: 8px 16px; font-size: 13px;">👥 ניהול אנשים</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <div id="adminContainer"></div>
+        </div>
+        <div id="pagination" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 16px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>עריכה - כרטיס <span id="modalTicketId"></span></span>
+        <button onclick="closeModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+      </div>
+
+      <div class="modal-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>שם</label>
+            <input type="text" id="modalName" disabled>
+          </div>
+          <div class="form-group">
+            <label>מכלול</label>
+            <input type="text" id="modalDepartment" disabled>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>סביבה</label>
+            <input type="text" id="modalEnvironment" disabled>
+          </div>
+          <div class="form-group">
+            <label>סוג ציוד</label>
+            <input type="text" id="modalEquipmentType" disabled>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>טלפון מטכל״י</label>
+            <input type="text" id="modalPhone" disabled>
+          </div>
+          <div class="form-group">
+            <label>כותרת</label>
+            <input type="text" id="modalSubject" disabled>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>סטטוס *</label>
+            <select id="modalStatus"></select>
+          </div>
+          <div class="form-group">
+            <label>כונן תקשוב</label>
+            <select id="modalTechOnCall">
+              <option value="">בחר כונן</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="max-width: calc(50% - 8px);">
+          <label>מטפל בבעיה</label>
+          <select id="modalAssignee">
+            <option value="">בחר מטפל</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label>הערות פנימיות</label>
+        <textarea id="modalNotes"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label>תיאור הבעיה:</label>
+        <div style="padding: 12px; background: #fafafa; border-radius: 8px; margin-top: 8px; border: 1px solid #eee;">
+          <p id="modalDescription" style="color: #666; margin: 0;"></p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-danger" onclick="deleteTicket()">מחק</button>
+        <div style="flex: 1;"></div>
+        <button class="btn-primary" onclick="saveTicket()">שמור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- People Management Modal -->
+  <div id="peopleModal" class="modal" onclick="if(event.target===this) togglePeopleModal()">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>👥 ניהול אנשים</span>
+        <button onclick="togglePeopleModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <input type="text" id="newPersonName" placeholder="שם מלא" style="flex: 1;">
+        <button class="btn-primary" onclick="addPerson()" style="width: auto; padding: 10px 20px;">הוסף</button>
+      </div>
+
+      <div id="peopleList"></div>
+    </div>
+  </div>
+
+  <script>
+    let config = { statuses: [], departments: [], people: [] }
+    let tickets = []
+    let selectedTicket = null
+    let currentTab = 0
+    let adminToken = null
+    let ticketInterval = null
+    let currentPage = 1
+    const PAGE_SIZE = 10
+
+    async function init() {
+      await loadConfig()
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config')
+        config = await res.json()
+        populateSelects()
+      } catch (e) {
+        console.error('Error loading config:', e)
+      }
+    }
+
+    function populateSelects() {
+      const deptSelect = document.getElementById('department')
+      config.departments.forEach(dept => {
+        const opt = document.createElement('option')
+        opt.value = dept
+        opt.textContent = dept
+        deptSelect.appendChild(opt)
+      })
+
+      const modalSta = document.getElementById('modalStatus')
+      config.statuses.forEach(sta => {
+        const opt = document.createElement('option')
+        opt.value = sta
+        opt.textContent = sta
+        modalSta.appendChild(opt)
+      })
+
+      populatePeopleDropdowns()
+    }
+
+    function populatePeopleDropdowns() {
+      const people = config.people || []
+
+      const techSelect = document.getElementById('modalTechOnCall')
+      const assigneeSelect = document.getElementById('modalAssignee')
+
+      // Save current values
+      const techVal = techSelect.value
+      const assigneeVal = assigneeSelect.value
+
+      // Clear and repopulate
+      techSelect.innerHTML = '<option value="">בחר כונן</option>'
+      assigneeSelect.innerHTML = '<option value="">בחר מטפל</option>'
+
+      people.forEach(person => {
+        const opt1 = document.createElement('option')
+        opt1.value = person
+        opt1.textContent = person
+        techSelect.appendChild(opt1)
+
+        const opt2 = document.createElement('option')
+        opt2.value = person
+        opt2.textContent = person
+        assigneeSelect.appendChild(opt2)
+      })
+
+      // Restore values
+      techSelect.value = techVal
+      assigneeSelect.value = assigneeVal
+    }
+
+    function togglePeopleModal() {
+      const modal = document.getElementById('peopleModal')
+      modal.classList.toggle('show')
+      if (modal.classList.contains('show')) {
+        renderPeopleList()
+      }
+    }
+
+    function renderPeopleList() {
+      const container = document.getElementById('peopleList')
+      const people = config.people || []
+
+      if (people.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">אין אנשים ברשימה</div>'
+        return
+      }
+
+      container.innerHTML = people.map(person => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; background: #fafafa; border: 1px solid #eee;">
+          <span style="font-size: 15px;">👤 ${person}</span>
+          <button onclick="removePerson('${person}')" style="background: none; border: none; cursor: pointer; font-size: 18px; color: #e53935; padding: 0 4px;" title="הסר">✕</button>
+        </div>
+      `).join('')
+    }
+
+    async function addPerson() {
+      const input = document.getElementById('newPersonName')
+      const name = input.value.trim()
+      if (!name) return
+
+      try {
+        const res = await fetch('/api/people', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({ name })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          config.people = data.people
+          populatePeopleDropdowns()
+          renderPeopleList()
+          input.value = ''
+        } else {
+          alert(data.error || 'שגיאה')
+        }
+      } catch (e) {
+        alert('שגיאת תקשורת')
+      }
+    }
+
+    async function removePerson(name) {
+      if (!confirm(`להסיר את ${name}?`)) return
+
+      try {
+        const res = await fetch('/api/people/' + encodeURIComponent(name), {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        })
+        const data = await res.json()
+        if (res.ok) {
+          config.people = data.people
+          populatePeopleDropdowns()
+          renderPeopleList()
+        }
+      } catch (e) {
+        alert('שגיאת תקשורת')
+      }
+    }
+
+    async function loadTickets() {
+      if (!adminToken) return
+      try {
+        const res = await fetch('/api/tickets', {
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        })
+        if (res.status === 401) {
+          adminLogout()
+          return
+        }
+        tickets = await res.json()
+        renderAdminTab()
+      } catch (e) {
+        console.error('Error loading tickets:', e)
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'))
+      document.querySelectorAll('.tab-content')[tab].classList.add('active')
+
+      document.getElementById('createTabBtn').classList.toggle('active', tab === 0)
+      const adminBtn = document.getElementById('adminTabBtn')
+      if (adminBtn) adminBtn.classList.toggle('active', tab === 1)
+
+      if (tab === 1 && adminToken) {
+        loadTickets()
+      }
+    }
+
+    function toggleLoginPopup() {
+      document.getElementById('loginPopup').classList.toggle('show')
+    }
+
+    async function adminLogin(e) {
+      e.preventDefault()
+      const username = document.getElementById('adminUser').value
+      const password = document.getElementById('adminPass').value
+      const loginError = document.getElementById('loginError')
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        })
+        const data = await res.json()
+
+        if (res.ok) {
+          adminToken = data.token
+          loginError.classList.remove('show')
+          document.getElementById('loginPopup').classList.remove('show')
+
+          // Show admin nav, hide login icon
+          document.getElementById('loginBtn').style.display = 'none'
+          document.getElementById('adminNav').style.display = 'flex'
+          document.getElementById('adminTabBtn').style.display = 'inline-block'
+          document.getElementById('createTabBtn').style.display = 'inline-block'
+
+          loadTickets()
+          ticketInterval = setInterval(loadTickets, 5000)
+
+          // Switch to admin panel
+          switchTab(1)
+        } else {
+          loginError.textContent = data.error || '❌ שם משתמש או סיסמה שגויים'
+          loginError.classList.add('show')
+        }
+      } catch (error) {
+        loginError.textContent = '❌ שגיאת תקשורת'
+        loginError.classList.add('show')
+      }
+    }
+
+    function adminLogout() {
+      if (adminToken) {
+        fetch('/api/logout', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        })
+      }
+      adminToken = null
+      tickets = []
+      if (ticketInterval) clearInterval(ticketInterval)
+
+      // Hide admin nav, show login icon
+      document.getElementById('loginBtn').style.display = 'flex'
+      document.getElementById('adminNav').style.display = 'none'
+      document.getElementById('adminTabBtn').style.display = 'none'
+      document.getElementById('createTabBtn').style.display = 'none'
+      document.getElementById('adminUser').value = ''
+      document.getElementById('adminPass').value = ''
+      document.getElementById('adminContainer').innerHTML = ''
+
+      switchTab(0)
+    }
+
+    async function submitTicket(e) {
+      e.preventDefault()
+      const form = {
+        name: document.getElementById('name').value,
+        department: document.getElementById('department').value,
+        environment: document.getElementById('environment').value,
+        equipmentType: document.getElementById('equipmentType').value,
+        phone: document.getElementById('phone').value,
+        subject: document.getElementById('subject').value,
+        description: document.getElementById('description').value,
+      }
+
+      try {
+        const res = await fetch('/api/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        })
+        if (res.ok) {
+          showSuccess('✅ כרטיס נוצר בהצלחה!')
+          e.target.reset()
+          await loadTickets()
+        } else {
+          showError('❌ שגיאה בשליחת הכרטיס')
+        }
+      } catch (error) {
+        showError('❌ שגיאת תקשורת')
+      }
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg')
+      el.textContent = msg
+      el.classList.add('show')
+      setTimeout(() => el.classList.remove('show'), 3000)
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg')
+      el.textContent = msg
+      el.classList.add('show')
+      setTimeout(() => el.classList.remove('show'), 3000)
+    }
+
+
+    function getStatusBadgeClass(ticket) {
+      if (ticket.status.includes('סגור')) return 'status-badge-closed'
+      if (ticket.status.includes('בהמתנה')) return 'status-badge-hold'
+      if (ticket.status.includes('בעבודה')) return 'status-badge-progress'
+      return 'status-badge-open'
+    }
+
+    function getFilteredTickets() {
+      const filter = document.getElementById('statusFilter')?.value || ''
+      let filtered = [...tickets]
+
+      // Filter by status
+      if (filter) {
+        filtered = filtered.filter(t => t.status === filter)
+      }
+
+      // Sort newest first
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+
+      return filtered
+    }
+
+    function goToPage(page) {
+      currentPage = page
+      renderAdminTab()
+    }
+
+    function renderAdminTab() {
+      const container = document.getElementById('adminContainer')
+      const paginationEl = document.getElementById('pagination')
+
+      const filtered = getFilteredTickets()
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+
+      if (currentPage > totalPages) currentPage = totalPages
+
+      const start = (currentPage - 1) * PAGE_SIZE
+      const pageTickets = filtered.slice(start, start + PAGE_SIZE)
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">אין כרטיסיות להצגה</div>'
+        paginationEl.innerHTML = ''
+        return
+      }
+
+      container.innerHTML = `
+        <table class="tickets-table">
+          <thead>
+            <tr>
+              <th>מספר</th>
+              <th>סטטוס</th>
+              <th>שם</th>
+              <th>טלפון</th>
+              <th>מכלול</th>
+              <th>סביבה</th>
+              <th>סוג ציוד</th>
+              <th>כותרת</th>
+              <th>כונן תקשוב</th>
+              <th>מטפל בבעיה</th>
+              <th>תאריך</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageTickets.map(ticket => `
+              <tr onclick="openModal('${ticket.id}')">
+                <td style="font-weight:600; color:#e67e22;">#${ticket.id.substring(0, 8)}</td>
+                <td><span class="status-badge ${getStatusBadgeClass(ticket)}">${ticket.status}</span></td>
+                <td>${ticket.name}</td>
+                <td>${ticket.phone || '-'}</td>
+                <td>${ticket.department}</td>
+                <td>${ticket.environment || '-'}</td>
+                <td>${ticket.equipmentType || '-'}</td>
+                <td>${ticket.subject}</td>
+                <td>${ticket.techOnCall || '-'}</td>
+                <td>${ticket.assignee || '-'}</td>
+                <td style="white-space:nowrap;">${new Date(ticket.createdAt).toLocaleString('he-IL')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `
+
+      // Pagination
+      if (totalPages <= 1) {
+        paginationEl.innerHTML = `<span class="page-info">${filtered.length} כרטיסיות</span>`
+        return
+      }
+
+      let paginationHTML = `<button class="page-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>&rsaquo;</button>`
+
+      for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`
+      }
+
+      paginationHTML += `<button class="page-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>&lsaquo;</button>`
+      paginationHTML += `<span class="page-info">${filtered.length} כרטיסיות</span>`
+
+      paginationEl.innerHTML = paginationHTML
+    }
+
+    function openModal(ticketId) {
+      selectedTicket = tickets.find(t => t.id === ticketId)
+      if (!selectedTicket) return
+
+      document.getElementById('modalTicketId').textContent = ticketId.substring(0, 8)
+      document.getElementById('modalName').value = selectedTicket.name
+      document.getElementById('modalSubject').value = selectedTicket.subject
+      document.getElementById('modalDepartment').value = selectedTicket.department
+      document.getElementById('modalEnvironment').value = selectedTicket.environment || ''
+      document.getElementById('modalEquipmentType').value = selectedTicket.equipmentType || ''
+      document.getElementById('modalPhone').value = selectedTicket.phone || ''
+      document.getElementById('modalStatus').value = selectedTicket.status
+      document.getElementById('modalTechOnCall').value = selectedTicket.techOnCall || ''
+      document.getElementById('modalAssignee').value = selectedTicket.assignee || ''
+      document.getElementById('modalNotes').value = selectedTicket.notes?.join('\n') || ''
+      document.getElementById('modalDescription').textContent = selectedTicket.description
+
+      document.getElementById('editModal').classList.add('show')
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('show')
+      selectedTicket = null
+    }
+
+    async function saveTicket() {
+      if (!selectedTicket) return
+      try {
+        await fetch(`/api/tickets/${selectedTicket.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({
+            status: document.getElementById('modalStatus').value,
+            techOnCall: document.getElementById('modalTechOnCall').value,
+            assignee: document.getElementById('modalAssignee').value,
+            notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim())
+          })
+        })
+        await loadTickets()
+        closeModal()
+        showSuccess('✅ כרטיס עודכן בהצלחה!')
+      } catch (e) {
+        showError('❌ שגיאה בעדכון הכרטיס')
+      }
+    }
+
+    async function deleteTicket() {
+      if (!selectedTicket || !confirm('האם אתה בטוח שברצונך למחוק כרטיס זה?')) return
+      try {
+        await fetch(`/api/tickets/${selectedTicket.id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + adminToken } })
+        await loadTickets()
+        closeModal()
+        showSuccess('✅ כרטיס נמחק בהצלחה!')
+      } catch (e) {
+        showError('❌ שגיאה במחיקת הכרטיס')
+      }
+    }
+
+    // Loading screen with percent counter
+    window.addEventListener('load', () => {
+      const percentEl = document.getElementById('loadingPercent')
+      let current = 0
+      const duration = 2000
+      const start = Date.now()
+
+      function updatePercent() {
+        const elapsed = Date.now() - start
+        const progress = Math.min(elapsed / duration, 1)
+        // Ease out curve
+        const eased = 1 - Math.pow(1 - progress, 3)
+        current = Math.round(eased * 100)
+        percentEl.textContent = current + '%'
+
+        if (progress < 1) {
+          requestAnimationFrame(updatePercent)
+        } else {
+          setTimeout(() => {
+            document.getElementById('loadingScreen').classList.add('hidden')
+          }, 400)
+        }
+      }
+
+      setTimeout(updatePercent, 700)
+    })
+
+    // Start
+    init()
+  </script>
+  <script>
+    // Particles network animation
+    (function() {
+      const canvas = document.getElementById('particles-canvas')
+      const ctx = canvas.getContext('2d')
+      let particles = []
+      const PARTICLE_COUNT = 80
+      const CONNECT_DIST = 150
+      let mouse = { x: null, y: null }
+      const MOUSE_RADIUS = 200
+
+      function resize() {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+      }
+
+      window.addEventListener('resize', resize)
+      resize()
+
+      document.addEventListener('mousemove', e => {
+        mouse.x = e.clientX
+        mouse.y = e.clientY
+      })
+
+      document.addEventListener('mouseleave', () => {
+        mouse.x = null
+        mouse.y = null
+      })
+
+      function createParticle() {
+        return {
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+          r: Math.random() * 2 + 1,
+          alpha: Math.random() * 0.5 + 0.3
+        }
+      }
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push(createParticle())
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        particles.forEach(p => {
+          p.x += p.vx
+          p.y += p.vy
+
+          if (p.x < 0) p.x = canvas.width
+          if (p.x > canvas.width) p.x = 0
+          if (p.y < 0) p.y = canvas.height
+          if (p.y > canvas.height) p.y = 0
+
+          // Mouse interaction - very gentle
+          if (mouse.x !== null) {
+            const dx = p.x - mouse.x
+            const dy = p.y - mouse.y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < MOUSE_RADIUS) {
+              const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * 0.003
+              p.vx += dx * force
+              p.vy += dy * force
+            }
+          }
+
+          // Clamp max speed
+          const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy)
+          if (speed > 0.3) {
+            p.vx = (p.vx / speed) * 0.3
+            p.vy = (p.vy / speed) * 0.3
+          }
+
+          // Dampen velocity
+          p.vx *= 0.995
+          p.vy *= 0.995
+
+          // Draw particle
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+          ctx.fillStyle = `rgba(255, 150, 50, ${p.alpha})`
+          ctx.fill()
+        })
+
+        // Draw connections
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x
+            const dy = particles[i].y - particles[j].y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+
+            if (dist < CONNECT_DIST) {
+              const alpha = (1 - dist / CONNECT_DIST) * 0.15
+              ctx.beginPath()
+              ctx.moveTo(particles[i].x, particles[i].y)
+              ctx.lineTo(particles[j].x, particles[j].y)
+              ctx.strokeStyle = `rgba(255, 140, 0, ${alpha})`
+              ctx.lineWidth = 0.8
+              ctx.stroke()
+            }
+          }
+
+          // Connect to mouse
+          if (mouse.x !== null) {
+            const dx = particles[i].x - mouse.x
+            const dy = particles[i].y - mouse.y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < MOUSE_RADIUS) {
+              const alpha = (1 - dist / MOUSE_RADIUS) * 0.2
+              ctx.beginPath()
+              ctx.moveTo(particles[i].x, particles[i].y)
+              ctx.lineTo(mouse.x, mouse.y)
+              ctx.strokeStyle = `rgba(255, 160, 40, ${alpha})`
+              ctx.lineWidth = 0.6
+              ctx.stroke()
+            }
+          }
+        }
+
+        requestAnimationFrame(animate)
+      }
+
+      animate()
+    })()
+  </script>
+</body>
+</html>

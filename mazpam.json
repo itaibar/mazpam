@@ -1,0 +1,28 @@
+{
+  "tickets": [
+    {
+      "id": "ff89fab6-eb83-485a-96a2-c7d85e33643a",
+      "name": "asdsad",
+      "department": "תא פקודות",
+      "environment": "סודי ביותר",
+      "equipmentType": "מחשב",
+      "phone": "2332",
+      "subject": "asdad",
+      "description": "asdas",
+      "status": "בעבודה",
+      "techOnCall": "אורי כוחיי",
+      "assignee": "אורי כוחיי",
+      "notes": "[]",
+      "createdAt": "2026-03-13T21:44:17.958Z",
+      "updatedAt": "2026-03-13T21:51:44.989Z"
+    }
+  ],
+  "people": [
+    "איתי בר",
+    "אורי כוחיי",
+    "ליאור עגמי",
+    "פאני צרילין",
+    "אריאל זכרוב",
+    "ענאן חלבי"
+  ]
+}
