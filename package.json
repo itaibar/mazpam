@@ -4,9 +4,10 @@
   "description": "Ticketing system for place management",
   "type": "module",
   "scripts": {
+    "start": "node server.mjs",
     "server": "node server.mjs"
   },
   "dependencies": {
-    "better-sqlite3": "^9.0.0"
+    "pg": "^8.12.0"
   }
 }
