@@ -390,7 +390,12 @@ const server = http.createServer(async (req, res) => {
     '.js': 'application/javascript',
     '.css': 'text/css',
     '.json': 'application/json',
-    '.html': 'text/html'
+    '.html': 'text/html',
+    '.svg': 'image/svg+xml',
+    '.avif': 'image/avif',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.ico': 'image/x-icon'
   }
 
   fs.readFile(filePath, (err, data) => {
