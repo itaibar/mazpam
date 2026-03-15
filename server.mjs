@@ -123,13 +123,13 @@ const server = http.createServer(async (req, res) => {
     // Create ticket
     if (req.url === '/api/tickets' && req.method === 'POST') {
       const data = JSON.parse(await readBody(req))
-      const { name, department, environment, equipmentType, phone, subject, description } = data
+      const { name, department, environment, equipmentType, faultType, phone, subject, description } = data
       if (!name || !department || !environment || !equipmentType || !subject || !description) {
         json(res, 400, { error: 'Missing required fields' }); return
       }
       const id = await db.generateId()
       const now = new Date().toISOString()
-      const ticket = { id, name, department, environment, equipmentType, phone: phone || '', subject, description, status: 'פתוח', techOnCall: '', assignee: '', createdAt: now, updatedAt: now, notes: [] }
+      const ticket = { id, name, department, environment, equipmentType, faultType: faultType || '', phone: phone || '', subject, description, status: 'פתוח', techOnCall: '', assignee: '', createdAt: now, updatedAt: now, notes: [] }
       await db.createTicket(ticket)
       json(res, 201, { ...ticket, sla: calculateSLA(now) }); return
     }

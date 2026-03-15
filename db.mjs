@@ -42,6 +42,7 @@ const db = {
           department TEXT NOT NULL,
           environment TEXT NOT NULL,
           equipment_type TEXT NOT NULL,
+          fault_type TEXT DEFAULT '',
           phone TEXT DEFAULT '',
           subject TEXT NOT NULL,
           description TEXT NOT NULL,
@@ -63,6 +64,9 @@ const db = {
       if (parseInt(rows[0].count) === 0) {
         await pool.query("INSERT INTO people (name) VALUES ('איתי בר'), ('אורי כוחיי'), ('ליאור עגמי') ON CONFLICT DO NOTHING")
       }
+      // Add fault_type column if missing
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN fault_type TEXT DEFAULT ''") } catch(e) { /* already exists */ }
+
       // Migrate UUIDs
       const { rows: uuidRows } = await pool.query("SELECT id FROM tickets WHERE LENGTH(id) > 5 ORDER BY created_at ASC")
       if (uuidRows.length > 0) {
@@ -132,9 +136,9 @@ const db = {
   async createTicket(ticket) {
     if (usePostgres) {
       await pool.query(
-        `INSERT INTO tickets (id, name, department, environment, equipment_type, phone, subject, description, status, tech_on_call, assignee, notes, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-        [ticket.id, ticket.name, ticket.department, ticket.environment, ticket.equipmentType, ticket.phone, ticket.subject, ticket.description, ticket.status, ticket.techOnCall, ticket.assignee, JSON.stringify(ticket.notes), ticket.createdAt, ticket.updatedAt]
+        `INSERT INTO tickets (id, name, department, environment, equipment_type, fault_type, phone, subject, description, status, tech_on_call, assignee, notes, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [ticket.id, ticket.name, ticket.department, ticket.environment, ticket.equipmentType, ticket.faultType, ticket.phone, ticket.subject, ticket.description, ticket.status, ticket.techOnCall, ticket.assignee, JSON.stringify(ticket.notes), ticket.createdAt, ticket.updatedAt]
       )
     } else {
       const data = loadJSON()
@@ -220,6 +224,7 @@ function rowToTicket(row) {
     department: row.department,
     environment: row.environment,
     equipmentType: row.equipment_type,
+    faultType: row.fault_type || '',
     phone: row.phone || '',
     subject: row.subject,
     description: row.description,

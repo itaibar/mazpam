@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>מצפ״ם - מערכת תקלות</title>
+  <title>מערכת תקלות</title>
   <link rel="icon" type="image/png" href="/Pakar.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -136,7 +136,7 @@
       padding: 12px 16px;
       border: 1.5px solid #e0e0e0;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 16px;
       font-family: 'Rubik', inherit;
       transition: all 0.25s;
       direction: rtl;
@@ -177,7 +177,7 @@
       padding: 12px 16px 12px 40px;
       border: 1.5px solid #e0e0e0;
       border-radius: 10px;
-      font-size: 15px;
+      font-size: 16px;
       font-family: 'Rubik', inherit;
       transition: all 0.25s;
       background-color: #fafafa;
@@ -718,6 +718,14 @@
         overflow-x: auto;
       }
 
+      select {
+        -webkit-appearance: menulist;
+        appearance: menulist;
+        background-image: none !important;
+        padding: 12px 16px;
+        font-size: 16px;
+      }
+
       .modal-content {
         max-width: 95%;
       }
@@ -731,9 +739,9 @@
 <body>
   <!-- Loading Screen -->
   <div class="loading-screen" id="loadingScreen">
-    <img src="/Pakar.png" alt="logo" style="height: 80px; margin-bottom: 16px; opacity: 0; animation: loadFadeIn 0.5s ease 0.1s forwards; filter: drop-shadow(0 2px 10px rgba(230,126,34,0.4));">
-    <div class="loading-logo">מצפ״ם</div>
-    <div class="loading-text">מערכת תקלות</div>
+    <img src="/Pakar.png" alt="logo" style="height: 130px; margin-bottom: 16px; opacity: 0; animation: loadFadeIn 0.5s ease 0.1s forwards; filter: drop-shadow(0 2px 10px rgba(230,126,34,0.4));">
+    <div class="loading-logo">מערכת תקלות</div>
+    <div class="loading-text">פתיחת קריאה</div>
     <div class="loading-bar-track">
       <div class="loading-bar-fill" id="loadingBarFill"></div>
     </div>
@@ -746,7 +754,7 @@
     <header>
       <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
         <img src="/Pakar.png" alt="logo" style="height: 60px; filter: drop-shadow(0 2px 6px rgba(230,126,34,0.3));">
-        <h1>מצפ״ם - מערכת תקלות</h1>
+        <h1>מערכת תקלות</h1>
       </div>
     </header>
 
@@ -821,8 +829,8 @@
               <select id="environment" required>
                 <option value="">בחר סביבה</option>
                 <option value="סודי">סודי</option>
-                <option value="סודי ביותר">סודי ביותר</option>
-                <option value="סודי ביותר (מודיעין)">סודי ביותר (מודיעין)</option>
+                <option value="סד״ב">סד״ב</option>
+                <option value="סד״ב (מודיעין)">סד״ב (מודיעין)</option>
                 <option value="שחור-זהב">שחור-זהב</option>
                 <option value="שמור">שמור</option>
                 <option value="בלמ״ס">בלמ״ס</option>
@@ -830,22 +838,32 @@
             </div>
           </div>
 
-          <div class="form-group" style="max-width: calc(50% - 8px);">
-            <label>סוג ציוד *</label>
-            <select id="equipmentType" required>
-              <option value="">בחר סוג ציוד</option>
-              <option value="טלוויזיה">טלוויזיה</option>
-              <option value="מחשב">מחשב</option>
-              <option value="מסך מחשב">מסך מחשב</option>
-              <option value="טלפון אדום">טלפון אדום</option>
-              <option value="טלפון שחור">טלפון שחור</option>
-              <option value="מדפסת">מדפסת</option>
-              <option value="מקלדת">מקלדת</option>
-              <option value="עכבר">עכבר</option>
-              <option value="VC">VC</option>
-              <option value="רמקולים">רמקולים</option>
-              <option value="UC">UC</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label>סיווג התקלה</label>
+              <select id="faultType">
+                <option value="">בחר סיווג</option>
+                <option value="חומרה">חומרה</option>
+                <option value="תוכנה">תוכנה</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>סוג ציוד *</label>
+              <select id="equipmentType" required>
+                <option value="">בחר סוג ציוד</option>
+                <option value="טלוויזיה">טלוויזיה</option>
+                <option value="מחשב">מחשב</option>
+                <option value="מסך מחשב">מסך מחשב</option>
+                <option value="טלפון אדום">טלפון אדום</option>
+                <option value="טלפון שחור">טלפון שחור</option>
+                <option value="מדפסת">מדפסת</option>
+                <option value="מקלדת">מקלדת</option>
+                <option value="עכבר">עכבר</option>
+                <option value="VC">VC</option>
+                <option value="רמקולים">רמקולים</option>
+                <option value="UC">UC</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-group">
@@ -914,9 +932,15 @@
           </div>
         </div>
 
-        <div class="form-group" style="max-width: calc(50% - 8px);">
-          <label>טלפון מטכל״י</label>
-          <input type="text" id="modalPhone" disabled>
+        <div class="form-row">
+          <div class="form-group">
+            <label>סיווג התקלה</label>
+            <input type="text" id="modalFaultType" disabled>
+          </div>
+          <div class="form-group">
+            <label>טלפון מטכל״י</label>
+            <input type="text" id="modalPhone" disabled>
+          </div>
         </div>
 
         <div class="form-row">
@@ -1227,6 +1251,7 @@
         department: document.getElementById('department').value,
         environment: document.getElementById('environment').value,
         equipmentType: document.getElementById('equipmentType').value,
+        faultType: document.getElementById('faultType').value,
         phone: document.getElementById('phone').value,
         subject: document.getElementById('subject').value,
         description: document.getElementById('description').value,
@@ -1239,8 +1264,10 @@
           body: JSON.stringify(form)
         })
         if (res.ok) {
-          showSuccess('✅ כרטיס נוצר בהצלחה!')
+          const ticket = await res.json()
+          showSuccess(`✅ תקלה מספר #${ticket.id} נפתחה בהצלחה!`)
           e.target.reset()
+          window.scrollTo({ top: 0, behavior: 'smooth' })
           await loadTickets()
         } else {
           showError('❌ שגיאה בשליחת הכרטיס')
@@ -1318,7 +1345,7 @@
         return
       }
 
-      const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'כונן תקשוב', 'מטפל בבעיה', 'תאריך']
+      const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'סיווג', 'כונן תקשוב', 'מטפל בבעיה', 'תאריך']
       const rows = filtered.map(t => [
         t.id,
         t.status,
@@ -1327,6 +1354,7 @@
         t.department,
         t.environment || '',
         t.equipmentType || '',
+        t.faultType || '',
         t.techOnCall || '',
         t.assignee || '',
         new Date(t.createdAt).toLocaleString('he-IL')
@@ -1404,6 +1432,7 @@
               <th>מכלול</th>
               <th>סביבה</th>
               <th>סוג ציוד</th>
+              <th>סיווג</th>
               <th>כונן תקשוב</th>
               <th>מטפל בבעיה</th>
               <th>תאריך</th>
@@ -1419,6 +1448,7 @@
                 <td>${ticket.department}</td>
                 <td>${ticket.environment || '-'}</td>
                 <td>${ticket.equipmentType || '-'}</td>
+                <td>${ticket.faultType || '-'}</td>
                 <td>${ticket.techOnCall || '-'}</td>
                 <td>${ticket.assignee || '-'}</td>
                 <td style="white-space:nowrap;">${new Date(ticket.createdAt).toLocaleString('he-IL')}</td>
@@ -1455,6 +1485,7 @@
       document.getElementById('modalDepartment').value = selectedTicket.department
       document.getElementById('modalEnvironment').value = selectedTicket.environment || ''
       document.getElementById('modalEquipmentType').value = selectedTicket.equipmentType || ''
+      document.getElementById('modalFaultType').value = selectedTicket.faultType || ''
       document.getElementById('modalPhone').value = selectedTicket.phone || ''
       document.getElementById('modalStatus').value = selectedTicket.status
       document.getElementById('modalTechOnCall').value = selectedTicket.techOnCall || ''
