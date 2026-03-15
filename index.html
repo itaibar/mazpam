@@ -870,14 +870,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
           <h2>ניהול תקלות</h2>
           <div style="display: flex; align-items: center; gap: 10px;">
-            <label style="margin: 0; font-size: 14px;">סינון:</label>
-            <select id="statusFilter" onchange="currentPage=1; renderAdminTab()" style="height: 40px; min-width: 140px;">
-              <option value="">הכל</option>
-              <option value="פתוח">פתוח</option>
-              <option value="בעבודה">בעבודה</option>
-              <option value="בהמתנה">בהמתנה</option>
-              <option value="סגור">סגור</option>
-            </select>
+            <input type="hidden" id="statusFilter" value="">
             <button class="btn-secondary" onclick="exportCSV()" style="padding: 8px 16px; font-size: 13px; min-width: 120px;">📥 CSV</button>
             <button class="btn-secondary" onclick="togglePeopleModal()" style="padding: 8px 16px; font-size: 13px; min-width: 120px;">👥 אנשים</button>
           </div>
