@@ -55,6 +55,19 @@ async function initDB() {
     await pool.query("INSERT INTO people (name) VALUES ('איתי בר'), ('אורי כוחיי'), ('ליאור עגמי') ON CONFLICT DO NOTHING")
   }
 
+  // Migrate old UUID IDs to sequential numbers
+  const { rows: uuidRows } = await pool.query("SELECT id FROM tickets WHERE LENGTH(id) > 5 ORDER BY created_at ASC")
+  if (uuidRows.length > 0) {
+    const { rows: maxRows } = await pool.query("SELECT id FROM tickets WHERE LENGTH(id) <= 5 ORDER BY id DESC LIMIT 1")
+    let nextNum = maxRows.length > 0 ? parseInt(maxRows[0].id) + 1 : 1
+    for (const row of uuidRows) {
+      const newId = String(nextNum).padStart(5, '0')
+      await pool.query('UPDATE tickets SET id = $1 WHERE id = $2', [newId, row.id])
+      nextNum++
+    }
+    console.log(`✅ Migrated ${uuidRows.length} ticket IDs to sequential numbers`)
+  }
+
   console.log('✅ Database initialized')
 }
 
