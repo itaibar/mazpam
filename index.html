@@ -1333,7 +1333,7 @@
 
       const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'כותרת', 'כונן תקשוב', 'מטפל בבעיה', 'תאריך']
       const rows = filtered.map(t => [
-        t.id.substring(0, 8),
+        t.id,
         t.status,
         t.name,
         t.phone || '',
@@ -1427,7 +1427,7 @@
           <tbody>
             ${pageTickets.map(ticket => `
               <tr onclick="openModal('${ticket.id}')">
-                <td style="font-weight:600; color:#e67e22;">#${ticket.id.substring(0, 8)}</td>
+                <td style="font-weight:600; color:#e67e22;">#${ticket.id}</td>
                 <td><span class="status-badge ${getStatusBadgeClass(ticket)}">${ticket.status}</span></td>
                 <td>${ticket.name}</td>
                 <td>${ticket.phone || '-'}</td>
@@ -1466,7 +1466,7 @@
       selectedTicket = tickets.find(t => t.id === ticketId)
       if (!selectedTicket) return
 
-      document.getElementById('modalTicketId').textContent = ticketId.substring(0, 8)
+      document.getElementById('modalTicketId').textContent = ticketId
       document.getElementById('modalName').value = selectedTicket.name
       document.getElementById('modalSubject').value = selectedTicket.subject
       document.getElementById('modalDepartment').value = selectedTicket.department
