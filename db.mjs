@@ -99,11 +99,12 @@ const db = {
 
   async generateId() {
     if (usePostgres) {
-      const { rows } = await pool.query('SELECT COUNT(*) as count FROM tickets')
-      return String(parseInt(rows[0].count) + 1).padStart(5, '0')
+      const { rows } = await pool.query('SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) as max_id FROM tickets')
+      return String(parseInt(rows[0].max_id) + 1).padStart(5, '0')
     } else {
       const data = loadJSON()
-      return String(data.tickets.length + 1).padStart(5, '0')
+      const maxId = data.tickets.reduce((max, t) => Math.max(max, parseInt(t.id) || 0), 0)
+      return String(maxId + 1).padStart(5, '0')
     }
   },
 
