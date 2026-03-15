@@ -58,12 +58,10 @@ async function initDB() {
   console.log('✅ Database initialized')
 }
 
-function generateId() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0,
-      v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+async function generateId() {
+  const { rows } = await pool.query('SELECT COUNT(*) as count FROM tickets')
+  const next = parseInt(rows[0].count) + 1
+  return String(next).padStart(5, '0')
 }
 
 function generateToken() {
@@ -230,7 +228,7 @@ const server = http.createServer(async (req, res) => {
         jsonResponse(res, 400, { error: 'Missing required fields' }); return
       }
 
-      const id = generateId()
+      const id = await generateId()
       const now = new Date().toISOString()
 
       await pool.query(
@@ -259,7 +257,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Get single ticket (admin only)
-    if (req.url.match(/^\/api\/tickets\/[a-f0-9\-]+$/) && req.method === 'GET') {
+    if (req.url.match(/^\/api\/tickets\/[0-9]+$/) && req.method === 'GET') {
       if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'Unauthorized' }); return }
       const id = req.url.split('/')[3]
       const { rows } = await pool.query('SELECT * FROM tickets WHERE id = $1', [id])
@@ -270,7 +268,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Update ticket (admin only)
-    if (req.url.match(/^\/api\/tickets\/[a-f0-9\-]+$/) && req.method === 'PATCH') {
+    if (req.url.match(/^\/api\/tickets\/[0-9]+$/) && req.method === 'PATCH') {
       if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'Unauthorized' }); return }
       const id = req.url.split('/')[3]
       const { rows } = await pool.query('SELECT * FROM tickets WHERE id = $1', [id])
@@ -296,7 +294,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Delete ticket (admin only)
-    if (req.url.match(/^\/api\/tickets\/[a-f0-9\-]+$/) && req.method === 'DELETE') {
+    if (req.url.match(/^\/api\/tickets\/[0-9]+$/) && req.method === 'DELETE') {
       if (!isAdmin(req)) { jsonResponse(res, 401, { error: 'Unauthorized' }); return }
       const id = req.url.split('/')[3]
       const { rows } = await pool.query('SELECT * FROM tickets WHERE id = $1', [id])
