@@ -801,7 +801,7 @@
           <div class="form-row">
             <div class="form-group">
               <label>שם *</label>
-              <input type="text" id="name" required>
+              <input type="text" id="name" required maxlength="10">
             </div>
             <div class="form-group">
               <label>טלפון מטכל״י</label>
@@ -850,12 +850,12 @@
 
           <div class="form-group">
             <label>כותרת בעיה *</label>
-            <input type="text" id="subject" required placeholder="תיאור קצר של הבעיה">
+            <input type="text" id="subject" required maxlength="20" placeholder="תיאור קצר של הבעיה">
           </div>
 
           <div class="form-group">
             <label>תיאור מלא *</label>
-            <textarea id="description" required placeholder="תיאור מפורט של הבעיה או הבקשה"></textarea>
+            <textarea id="description" required maxlength="200" placeholder="תיאור מפורט של הבעיה או הבקשה"></textarea>
           </div>
 
           <button type="submit" class="btn-primary">שלח כרטיס</button>
@@ -914,15 +914,9 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>טלפון מטכל״י</label>
-            <input type="text" id="modalPhone" disabled>
-          </div>
-          <div class="form-group">
-            <label>כותרת</label>
-            <input type="text" id="modalSubject" disabled>
-          </div>
+        <div class="form-group" style="max-width: calc(50% - 8px);">
+          <label>טלפון מטכל״י</label>
+          <input type="text" id="modalPhone" disabled>
         </div>
 
         <div class="form-row">
@@ -1324,7 +1318,7 @@
         return
       }
 
-      const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'כותרת', 'כונן תקשוב', 'מטפל בבעיה', 'תאריך']
+      const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'כונן תקשוב', 'מטפל בבעיה', 'תאריך']
       const rows = filtered.map(t => [
         t.id,
         t.status,
@@ -1333,7 +1327,6 @@
         t.department,
         t.environment || '',
         t.equipmentType || '',
-        t.subject,
         t.techOnCall || '',
         t.assignee || '',
         new Date(t.createdAt).toLocaleString('he-IL')
@@ -1411,7 +1404,6 @@
               <th>מכלול</th>
               <th>סביבה</th>
               <th>סוג ציוד</th>
-              <th>כותרת</th>
               <th>כונן תקשוב</th>
               <th>מטפל בבעיה</th>
               <th>תאריך</th>
@@ -1427,7 +1419,6 @@
                 <td>${ticket.department}</td>
                 <td>${ticket.environment || '-'}</td>
                 <td>${ticket.equipmentType || '-'}</td>
-                <td>${ticket.subject}</td>
                 <td>${ticket.techOnCall || '-'}</td>
                 <td>${ticket.assignee || '-'}</td>
                 <td style="white-space:nowrap;">${new Date(ticket.createdAt).toLocaleString('he-IL')}</td>
