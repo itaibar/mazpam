@@ -943,6 +943,11 @@
           </div>
         </div>
 
+        <div class="form-group">
+          <label>כותרת בעיה</label>
+          <input type="text" id="modalSubject" disabled>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>סטטוס *</label>
@@ -1482,6 +1487,7 @@
 
       document.getElementById('modalTicketId').textContent = ticketId
       document.getElementById('modalName').value = selectedTicket.name
+      document.getElementById('modalSubject').value = selectedTicket.subject
       document.getElementById('modalDepartment').value = selectedTicket.department
       document.getElementById('modalEnvironment').value = selectedTicket.environment || ''
       document.getElementById('modalEquipmentType').value = selectedTicket.equipmentType || ''
