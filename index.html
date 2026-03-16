@@ -300,6 +300,11 @@
     }
 
     /* Tickets Table */
+    .table-wrapper {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .tickets-table {
       width: 100%;
       border-collapse: separate;
@@ -727,9 +732,6 @@
         width: 100%;
       }
 
-      .table-wrapper {
-        overflow-x: auto;
-      }
 
       select {
         -webkit-appearance: menulist;
@@ -999,6 +1001,32 @@
         <div style="flex: 1;"></div>
         <button class="btn-primary" onclick="saveTicket()">שמור</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Close Reason Modal -->
+  <div id="closeReasonModal" class="modal" style="z-index:10000;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>סגירת תקלה</span>
+        <button onclick="cancelCloseReason()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label>סיבת סגירה *</label>
+        <select id="closeReasonSelect">
+          <option value="">בחר סיבה</option>
+          <option value="ציוד - החלפה">ציוד - החלפה</option>
+          <option value="ציוד - תיקון">ציוד - תיקון</option>
+          <option value="ציוד - מתן חדש">ציוד - מתן חדש</option>
+          <option value="תוכנה - תיקון">תוכנה - תיקון</option>
+          <option value="תוכנה - התקנה מחדש">תוכנה - התקנה מחדש</option>
+          <option value="משתמש - הרשאות/גישה">משתמש - הרשאות/גישה</option>
+          <option value="משתמש - הדרכה">משתמש - הדרכה</option>
+          <option value="אתחול">אתחול</option>
+          <option value="אחר">אחר</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="confirmCloseReason()">סגור תקלה</button>
     </div>
   </div>
 
@@ -1451,7 +1479,7 @@
         return
       }
 
-      const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'סיווג', 'כונן תקשוב', 'מטפל בבעיה', 'תאריך']
+      const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'סיווג', 'כונן תקשוב', 'מטפל בבעיה', 'סיבת סגירה', 'נפתח', 'נסגר', 'זמן טיפול']
       const rows = filtered.map(t => [
         t.id,
         t.status,
@@ -1463,7 +1491,10 @@
         t.faultType || '',
         t.techOnCall || '',
         t.assignee || '',
-        new Date(t.createdAt).toLocaleString('he-IL')
+        t.closeReason || '',
+        new Date(t.createdAt).toLocaleString('he-IL'),
+        t.closedAt ? new Date(t.closedAt).toLocaleString('he-IL') : '',
+        formatDuration(t.createdAt, t.closedAt)
       ])
 
       // BOM for Hebrew support in Excel
@@ -1480,6 +1511,17 @@
       a.download = 'תקלות_' + new Date().toLocaleDateString('he-IL') + '.csv'
       a.click()
       URL.revokeObjectURL(url)
+    }
+
+    function formatDuration(createdAt, closedAt) {
+      if (!closedAt) return '-'
+      const ms = new Date(closedAt) - new Date(createdAt)
+      const minutes = Math.floor(ms / 60000)
+      const hours = Math.floor(minutes / 60)
+      const days = Math.floor(hours / 24)
+      if (days > 0) return `${days} ימים ${hours % 24} שעות`
+      if (hours > 0) return `${hours} שעות ${minutes % 60} דקות`
+      return `${minutes} דקות`
     }
 
     function getStatusBadgeClass(ticket) {
@@ -1541,7 +1583,10 @@
               <th>סיווג</th>
               <th>כונן תקשוב</th>
               <th>מטפל בבעיה</th>
-              <th>תאריך</th>
+              <th>סיבת סגירה</th>
+              <th>נפתח</th>
+              <th>נסגר</th>
+              <th>זמן טיפול</th>
             </tr>
           </thead>
           <tbody>
@@ -1557,7 +1602,10 @@
                 <td>${ticket.faultType || '-'}</td>
                 <td>${ticket.techOnCall || '-'}</td>
                 <td>${ticket.assignee || '-'}</td>
+                <td>${ticket.closeReason || '-'}</td>
                 <td style="white-space:nowrap;">${new Date(ticket.createdAt).toLocaleString('he-IL')}</td>
+                <td style="white-space:nowrap;">${ticket.closedAt ? new Date(ticket.closedAt).toLocaleString('he-IL') : '-'}</td>
+                <td style="white-space:nowrap;">${formatDuration(ticket.createdAt, ticket.closedAt)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -1610,6 +1658,19 @@
 
     async function saveTicket() {
       if (!selectedTicket) return
+
+      const newStatus = document.getElementById('modalStatus').value
+
+      // If closing, show close reason dialog first
+      if (newStatus === 'סגור' && selectedTicket.status !== 'סגור') {
+        document.getElementById('closeReasonModal').classList.add('show')
+        return
+      }
+
+      await doSaveTicket({})
+    }
+
+    async function doSaveTicket(extra) {
       try {
         await fetch(`/api/tickets/${selectedTicket.id}`, {
           method: 'PATCH',
@@ -1618,7 +1679,8 @@
             status: document.getElementById('modalStatus').value,
             techOnCall: document.getElementById('modalTechOnCall').value,
             assignee: document.getElementById('modalAssignee').value,
-            notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim())
+            notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim()),
+            ...extra
           })
         })
         await loadTickets()
@@ -1627,6 +1689,21 @@
       } catch (e) {
         showError('❌ שגיאה בעדכון הכרטיס')
       }
+    }
+
+    function confirmCloseReason() {
+      const reason = document.getElementById('closeReasonSelect').value
+      if (!reason) {
+        alert('יש לבחור סיבת סגירה')
+        return
+      }
+      document.getElementById('closeReasonModal').classList.remove('show')
+      doSaveTicket({ closeReason: reason, closedAt: new Date().toISOString() })
+    }
+
+    function cancelCloseReason() {
+      document.getElementById('closeReasonModal').classList.remove('show')
+      document.getElementById('modalStatus').value = selectedTicket.status
     }
 
     async function deleteTicket() {

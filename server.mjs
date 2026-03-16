@@ -160,6 +160,8 @@ const server = http.createServer(async (req, res) => {
       if (data.techOnCall !== undefined) ticket.techOnCall = data.techOnCall
       if (data.assignee !== undefined) ticket.assignee = data.assignee
       if (data.notes !== undefined) ticket.notes = data.notes
+      if (data.closeReason !== undefined) ticket.closeReason = data.closeReason
+      if (data.closedAt !== undefined) ticket.closedAt = data.closedAt
       ticket.updatedAt = new Date().toISOString()
       await db.updateTicket(id, ticket)
       json(res, 200, { ...ticket, sla: calculateSLA(ticket.createdAt) }); return
