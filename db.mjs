@@ -50,6 +50,8 @@ const db = {
           tech_on_call TEXT DEFAULT '',
           assignee TEXT DEFAULT '',
           notes TEXT DEFAULT '[]',
+          close_reason TEXT DEFAULT '',
+          closed_at TEXT DEFAULT '',
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
@@ -64,8 +66,10 @@ const db = {
       if (parseInt(rows[0].count) === 0) {
         await pool.query("INSERT INTO people (name) VALUES ('איתי בר'), ('אורי כוחיי'), ('ליאור עגמי') ON CONFLICT DO NOTHING")
       }
-      // Add fault_type column if missing
+      // Add missing columns
       try { await pool.query("ALTER TABLE tickets ADD COLUMN fault_type TEXT DEFAULT ''") } catch(e) { /* already exists */ }
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN close_reason TEXT DEFAULT ''") } catch(e) { /* already exists */ }
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN closed_at TEXT DEFAULT ''") } catch(e) { /* already exists */ }
 
       // Migrate UUIDs
       const { rows: uuidRows } = await pool.query("SELECT id FROM tickets WHERE LENGTH(id) > 5 ORDER BY created_at ASC")
@@ -153,8 +157,8 @@ const db = {
   async updateTicket(id, updates) {
     if (usePostgres) {
       await pool.query(
-        'UPDATE tickets SET status=$1, tech_on_call=$2, assignee=$3, notes=$4, updated_at=$5 WHERE id=$6',
-        [updates.status, updates.techOnCall, updates.assignee, JSON.stringify(updates.notes), updates.updatedAt, id]
+        'UPDATE tickets SET status=$1, tech_on_call=$2, assignee=$3, notes=$4, close_reason=$5, closed_at=$6, updated_at=$7 WHERE id=$8',
+        [updates.status, updates.techOnCall, updates.assignee, JSON.stringify(updates.notes), updates.closeReason || '', updates.closedAt || '', updates.updatedAt, id]
       )
     } else {
       const data = loadJSON()
@@ -164,6 +168,8 @@ const db = {
         data.tickets[index].techOnCall = updates.techOnCall
         data.tickets[index].assignee = updates.assignee
         data.tickets[index].notes = JSON.stringify(updates.notes)
+        data.tickets[index].closeReason = updates.closeReason || ''
+        data.tickets[index].closedAt = updates.closedAt || ''
         data.tickets[index].updatedAt = updates.updatedAt
         saveJSON(data)
       }
@@ -225,6 +231,8 @@ function rowToTicket(row) {
     environment: row.environment,
     equipmentType: row.equipment_type,
     faultType: row.fault_type || '',
+    closeReason: row.close_reason || '',
+    closedAt: row.closed_at || '',
     phone: row.phone || '',
     subject: row.subject,
     description: row.description,
