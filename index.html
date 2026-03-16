@@ -565,6 +565,19 @@
       color: #333;
     }
 
+    @keyframes popupSlide {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes nudge {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      15% { transform: translate(-50%, -50%) scale(1.05); }
+      30% { transform: translate(-50%, -50%) scale(1); }
+      45% { transform: translate(-50%, -50%) scale(1.03); }
+      60% { transform: translate(-50%, -50%) scale(1); }
+    }
+
     @keyframes modalIn {
       from { opacity: 0; transform: scale(0.95) translateY(10px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
@@ -1015,6 +1028,9 @@
     let ticketInterval = null
     let currentPage = 1
     const PAGE_SIZE = 10
+    let knownTicketIds = null
+    let unacknowledgedCount = 0
+    let alertSoundInterval = null
 
     async function init() {
       await loadConfig()
@@ -1161,11 +1177,93 @@
           return
         }
         tickets = await res.json()
+
+        // Detect new tickets by ID
+        const currentIds = new Set(tickets.map(t => t.id))
+        if (knownTicketIds !== null) {
+          const newIds = [...currentIds].filter(id => !knownTicketIds.has(id))
+          if (newIds.length > 0) {
+            unacknowledgedCount += newIds.length
+            playAlertSound()
+            startRepeatingAlert()
+            showNewTicketPopup(unacknowledgedCount)
+          }
+        }
+        knownTicketIds = currentIds
+
         renderDashboard()
         renderAdminTab()
       } catch (e) {
         console.error('Error loading tickets:', e)
       }
+    }
+
+    function startRepeatingAlert() {
+      if (alertSoundInterval) clearInterval(alertSoundInterval)
+      alertSoundInterval = setInterval(() => {
+        playAlertSound()
+      }, 2000)
+    }
+
+    function stopRepeatingAlert() {
+      if (alertSoundInterval) {
+        clearInterval(alertSoundInterval)
+        alertSoundInterval = null
+      }
+    }
+
+    function playAlertSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      // Play two short beeps
+      const playBeep = (time, freq) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.frequency.value = freq
+        osc.type = 'sine'
+        gain.gain.setValueAtTime(0.3, time)
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3)
+        osc.start(time)
+        osc.stop(time + 0.3)
+      }
+      playBeep(ctx.currentTime, 880)
+      playBeep(ctx.currentTime + 0.35, 1100)
+    }
+
+    function showNewTicketPopup(count) {
+      // Remove existing popup if any
+      const existing = document.getElementById('newTicketPopup')
+      if (existing) existing.remove()
+
+      const popup = document.createElement('div')
+      popup.id = 'newTicketPopup'
+      popup.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:linear-gradient(135deg,#e67e22,#d35400); color:white; padding:32px 50px; border-radius:20px; font-size:22px; font-weight:700; z-index:9999; box-shadow:0 15px 50px rgba(230,126,34,0.5); animation:popupSlide 0.4s ease, nudge 2s ease-in-out 1s infinite; font-family:Rubik,sans-serif; text-align:center; min-width:340px; direction:rtl;'
+
+      const text = document.createElement('div')
+      text.textContent = count === 1 ? '🔔 תקלה חדשה התקבלה!' : `🔔 ${count} תקלות חדשות התקבלו!`
+
+      const closeBtn = document.createElement('button')
+      closeBtn.textContent = '✕'
+      closeBtn.style.cssText = 'position:absolute; top:6px; left:6px; background:rgba(0,0,0,0.15); border:none; color:rgba(255,255,255,0.8); font-size:16px; cursor:pointer; padding:0; line-height:1; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;'
+      closeBtn.onmouseover = () => closeBtn.style.color = 'white'
+      closeBtn.onmouseout = () => closeBtn.style.color = 'rgba(255,255,255,0.7)'
+      closeBtn.onclick = (e) => {
+        e.stopPropagation()
+        unacknowledgedCount = 0
+        stopRepeatingAlert()
+        popup.remove()
+      }
+
+      popup.appendChild(text)
+      popup.appendChild(closeBtn)
+      popup.onclick = () => {
+        unacknowledgedCount = 0
+        stopRepeatingAlert()
+        popup.remove()
+        switchTab(1)
+      }
+      document.body.appendChild(popup)
     }
 
     function switchTab(tab) {
@@ -1235,6 +1333,9 @@
       }
       adminToken = null
       tickets = []
+      knownTicketIds = null
+      unacknowledgedCount = 0
+      stopRepeatingAlert()
       if (ticketInterval) clearInterval(ticketInterval)
 
       // Hide admin nav, show login icon
