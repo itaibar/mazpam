@@ -840,8 +840,8 @@
         <form onsubmit="submitTicket(event)">
           <div class="form-row">
             <div class="form-group">
-              <label>שם *</label>
-              <input type="text" id="name" required maxlength="10">
+              <label>שם * <span id="nameCounter" style="font-weight:400; color:#aaa; font-size:12px;">10/10</span></label>
+              <input type="text" id="name" required maxlength="10" oninput="document.getElementById('nameCounter').textContent = (10 - this.value.length) + '/10'">
             </div>
             <div class="form-group">
               <label>טלפון מטכל״י</label>
