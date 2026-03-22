@@ -785,10 +785,26 @@
           <button class="btn-logout" onclick="adminLogout()">התנתק</button>
         </div>
       </div>
-      <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="nav-icon-btn" onclick="toggleStatusPopup()">🔍</button>
         <button class="tab-btn active" onclick="switchTab(0)" id="createTabBtn" style="display:none;">פתיחת תקלה</button>
       </div>
     </nav>
+
+    <!-- Status Lookup Popup -->
+    <div id="statusPopup" class="login-popup" onclick="if(event.target===this) toggleStatusPopup()">
+      <div class="login-popup-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin:0;">🔍 בדיקת סטטוס תקלה</h3>
+          <button onclick="toggleStatusPopup()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <input type="text" id="statusLookupId" placeholder="מספר תקלה" inputmode="numeric" maxlength="5" style="margin:0; flex:1;" onkeydown="if(event.key==='Enter') lookupStatus()">
+          <button type="button" class="btn-primary" onclick="lookupStatus()" style="width: auto; padding: 12px 24px;">בדוק</button>
+        </div>
+        <div id="statusLookupResult"></div>
+      </div>
+    </div>
 
     <!-- Login Popup -->
     <div id="loginPopup" class="login-popup" onclick="if(event.target===this) toggleLoginPopup()">
@@ -819,6 +835,7 @@
 
       <!-- Tab 0: Create Ticket -->
       <div class="tab-content active">
+
         <h2 style="margin-bottom: 20px;">פתיחת תקלה חדשה</h2>
         <form onsubmit="submitTicket(event)">
           <div class="form-row">
@@ -860,6 +877,8 @@
                 <option value="">בחר סיווג</option>
                 <option value="חומרה">חומרה</option>
                 <option value="תוכנה">תוכנה</option>
+                <option value="מפל״ז">מפל״ז</option>
+                <option value="אחר">אחר</option>
               </select>
             </div>
             <div class="form-group">
@@ -882,13 +901,13 @@
           </div>
 
           <div class="form-group">
-            <label>כותרת בעיה *</label>
-            <input type="text" id="subject" required maxlength="20" placeholder="תיאור קצר של הבעיה">
+            <label>כותרת בעיה * <span id="subjectCounter" style="font-weight:400; color:#aaa; font-size:12px;">20/20</span></label>
+            <input type="text" id="subject" required maxlength="20" placeholder="תיאור קצר של הבעיה" oninput="document.getElementById('subjectCounter').textContent = (20 - this.value.length) + '/20'">
           </div>
 
           <div class="form-group">
-            <label>תיאור מלא *</label>
-            <textarea id="description" required maxlength="200" placeholder="תיאור מפורט של הבעיה או הבקשה"></textarea>
+            <label>תיאור מלא * <span id="descCounter" style="font-weight:400; color:#aaa; font-size:12px;">200/200</span></label>
+            <textarea id="description" required maxlength="200" placeholder="תיאור מפורט של הבעיה או הבקשה" oninput="document.getElementById('descCounter').textContent = (200 - this.value.length) + '/200'"></textarea>
           </div>
 
           <button type="submit" class="btn-primary">שלח כרטיס</button>
@@ -1308,6 +1327,12 @@
       }
     }
 
+    function toggleStatusPopup() {
+      document.getElementById('statusPopup').classList.toggle('show')
+      document.getElementById('statusLookupResult').innerHTML = ''
+      document.getElementById('statusLookupId').value = ''
+    }
+
     function toggleLoginPopup() {
       document.getElementById('loginPopup').classList.toggle('show')
     }
@@ -1411,11 +1436,57 @@
       }
     }
 
+    async function lookupStatus() {
+      const input = document.getElementById('statusLookupId').value.trim()
+      const result = document.getElementById('statusLookupResult')
+      if (!input) { result.innerHTML = ''; return }
+
+      try {
+        const res = await fetch(`/api/tickets/${parseInt(input)}/status`)
+        if (!res.ok) {
+          result.innerHTML = '<div style="color:#c62828; padding:10px 0; text-align:center;">תקלה לא נמצאה</div>'
+          return
+        }
+        const ticket = await res.json()
+
+        const statusColors = {
+          'פתוח': '#616161',
+          'בעבודה': '#e65100',
+          'בהמתנה': '#c62828',
+          'סגור': '#2e7d32'
+        }
+        const color = statusColors[ticket.status] || '#333'
+
+        let html = `
+          <div style="background:#f9f9f9; border:1px solid #eee; border-radius:10px; padding:16px; margin-top:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span style="font-weight:700; color:#e67e22;">תקלה #${ticket.id}</span>
+              <span style="background:${color}15; color:${color}; padding:4px 14px; border-radius:8px; font-weight:600; font-size:14px;">${ticket.status}</span>
+            </div>
+            <div style="font-size:13px; color:#555; margin-bottom:4px;"><b>פותח:</b> ${ticket.name}</div>
+            <div style="font-size:13px; color:#555; margin-bottom:4px;"><b>כותרת:</b> ${ticket.subject}</div>
+            <div style="font-size:13px; color:#555; margin-bottom:8px;"><b>תיאור:</b> ${ticket.description}</div>
+            <div style="font-size:12px; color:#888;">נפתח: ${new Date(ticket.createdAt).toLocaleString('he-IL')}</div>`
+
+        if (ticket.closedAt) {
+          html += `<div style="font-size:13px; color:#888; margin-top:4px;">נסגר: ${new Date(ticket.closedAt).toLocaleString('he-IL')}</div>`
+        }
+        if (ticket.closeReason) {
+          html += `<div style="font-size:13px; color:#888; margin-top:4px;">סיבה: ${ticket.closeReason}</div>`
+        }
+
+        html += '</div>'
+        result.innerHTML = html
+      } catch (e) {
+        result.innerHTML = '<div style="color:#c62828; padding:10px 0; text-align:center;">שגיאת תקשורת</div>'
+      }
+    }
+
     function showSuccess(msg) {
       const el = document.getElementById('successMsg')
       el.textContent = msg
       el.classList.add('show')
-      setTimeout(() => el.classList.remove('show'), 3000)
+      setTimeout(() => el.classList.remove('show'), 10000)
     }
 
     function showError(msg) {

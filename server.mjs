@@ -134,6 +134,24 @@ const server = http.createServer(async (req, res) => {
       json(res, 201, { ...ticket, sla: calculateSLA(now) }); return
     }
 
+    // Public ticket status lookup (no auth)
+    if (req.url.match(/^\/api\/tickets\/[0-9]+\/status$/) && req.method === 'GET') {
+      const rawId = req.url.split('/')[3]
+      const id = String(parseInt(rawId)).padStart(5, '0')
+      const ticket = await db.getTicket(id)
+      if (!ticket) { json(res, 404, { error: 'תקלה לא נמצאה' }); return }
+      json(res, 200, {
+        id: ticket.id,
+        name: ticket.name,
+        subject: ticket.subject,
+        description: ticket.description,
+        status: ticket.status,
+        createdAt: ticket.createdAt,
+        closedAt: ticket.closedAt || null,
+        closeReason: ticket.closeReason || null
+      }); return
+    }
+
     // List tickets (admin)
     if (req.url === '/api/tickets' && req.method === 'GET') {
       if (!isAdmin(req)) { json(res, 401, { error: 'Unauthorized' }); return }
