@@ -11,10 +11,10 @@ const PORT = process.env.PORT || 3001
 // Branch configuration
 const BRANCHES = {
   main:    { name: 'מזפם', prefix: '',  admin: 'admin',   pass: process.env.ADMIN_PASS || 'admin123', subdomain: '' },
-  A:       { name: 'עמקים', prefix: 'A', admin: 'admin_a', pass: process.env.ADMIN_PASS_A || 'admin123', subdomain: 'amakim' },
-  M:       { name: 'מפרץ', prefix: 'M', admin: 'admin_m', pass: process.env.ADMIN_PASS_M || 'admin123', subdomain: 'mifratz' },
-  H:       { name: 'חוף',   prefix: 'H', admin: 'admin_h', pass: process.env.ADMIN_PASS_H || 'admin123', subdomain: 'hof' },
-  G:       { name: 'גדור', prefix: 'G', admin: 'admin_g', pass: process.env.ADMIN_PASS_G || 'admin123', subdomain: 'gdor' },
+  A:       { name: 'עמקים', prefix: 'A', admin: 'admin_a', pass: process.env.ADMIN_PASS_A || 'amakim!@#', subdomain: 'amakim' },
+  M:       { name: 'מפרץ', prefix: 'M', admin: 'admin_m', pass: process.env.ADMIN_PASS_M || 'mifratz!@#', subdomain: 'mifratz' },
+  H:       { name: 'חוף',   prefix: 'H', admin: 'admin_h', pass: process.env.ADMIN_PASS_H || 'hof!@#', subdomain: 'hof' },
+  G:       { name: 'גדור', prefix: 'G', admin: 'admin_g', pass: process.env.ADMIN_PASS_G || 'gdor!@#', subdomain: 'gdor' },
 }
 
 // Token -> branch key mapping
