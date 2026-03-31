@@ -44,7 +44,7 @@ function getBranchFromHost(req) {
     }
   }
   // Only allow exact main domain or localhost - no unknown subdomains
-  const allowedHosts = ['takalot.online', 'localhost', '127.0.0.1']
+  const allowedHosts = ['takalot.online', 'mazpam-web.onrender.com', 'localhost', '127.0.0.1']
   if (allowedHosts.includes(host)) {
     return 'main'
   }
