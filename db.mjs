@@ -8,7 +8,6 @@ const JSON_PATH = path.join(__dirname, 'mazpam.json')
 let pool = null
 const usePostgres = !!process.env.DATABASE_URL
 
-// Try to import pg only if DATABASE_URL is set
 if (usePostgres) {
   const pg = await import('pg')
   pool = new pg.default.Pool({
@@ -17,7 +16,6 @@ if (usePostgres) {
   })
 }
 
-// JSON file helpers
 function loadJSON() {
   if (fs.existsSync(JSON_PATH)) {
     try {
@@ -31,7 +29,6 @@ function saveJSON(data) {
   fs.writeFileSync(JSON_PATH, JSON.stringify(data, null, 2))
 }
 
-// Unified DB interface
 const db = {
   async init() {
     if (usePostgres) {
@@ -52,6 +49,8 @@ const db = {
           notes TEXT DEFAULT '[]',
           close_reason TEXT DEFAULT '',
           closed_at TEXT DEFAULT '',
+          branch TEXT DEFAULT 'main',
+          escalated_to TEXT DEFAULT '',
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
@@ -59,70 +58,95 @@ const db = {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS people (
           id SERIAL PRIMARY KEY,
-          name TEXT NOT NULL UNIQUE
+          name TEXT NOT NULL,
+          branch TEXT DEFAULT 'main',
+          UNIQUE(name, branch)
         )
       `)
+      // Add branch column if missing
+      try { await pool.query("ALTER TABLE people ADD COLUMN branch TEXT DEFAULT 'main'") } catch(e) {}
+      // Drop old unique constraint and add new one
+      try { await pool.query("ALTER TABLE people DROP CONSTRAINT IF EXISTS people_name_key") } catch(e) {}
+      try { await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS people_name_branch_idx ON people(name, branch)") } catch(e) {}
+
       const { rows } = await pool.query('SELECT COUNT(*) as count FROM people')
       if (parseInt(rows[0].count) === 0) {
-        await pool.query("INSERT INTO people (name) VALUES ('איתי בר'), ('אורי כוחיי'), ('ליאור עגמי') ON CONFLICT DO NOTHING")
+        await pool.query("INSERT INTO people (name, branch) VALUES ('איתי בר', 'main'), ('אורי כוחיי', 'main'), ('ליאור עגמי', 'main') ON CONFLICT DO NOTHING")
       }
       // Add missing columns
-      try { await pool.query("ALTER TABLE tickets ADD COLUMN fault_type TEXT DEFAULT ''") } catch(e) { /* already exists */ }
-      try { await pool.query("ALTER TABLE tickets ADD COLUMN close_reason TEXT DEFAULT ''") } catch(e) { /* already exists */ }
-      try { await pool.query("ALTER TABLE tickets ADD COLUMN closed_at TEXT DEFAULT ''") } catch(e) { /* already exists */ }
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN fault_type TEXT DEFAULT ''") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN close_reason TEXT DEFAULT ''") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN closed_at TEXT DEFAULT ''") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN branch TEXT DEFAULT 'main'") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN escalated_to TEXT DEFAULT ''") } catch(e) {}
 
       // Migrate UUIDs
-      const { rows: uuidRows } = await pool.query("SELECT id FROM tickets WHERE LENGTH(id) > 5 ORDER BY created_at ASC")
+      const { rows: uuidRows } = await pool.query("SELECT id FROM tickets WHERE id ~ '[a-f]' ORDER BY created_at ASC")
       if (uuidRows.length > 0) {
-        const { rows: maxRows } = await pool.query("SELECT id FROM tickets WHERE LENGTH(id) <= 5 ORDER BY id DESC LIMIT 1")
+        const { rows: maxRows } = await pool.query("SELECT id FROM tickets WHERE id NOT LIKE '%-%' AND id ~ '^[0-9]+$' ORDER BY CAST(id AS INTEGER) DESC LIMIT 1")
         let nextNum = maxRows.length > 0 ? parseInt(maxRows[0].id) + 1 : 1
         for (const row of uuidRows) {
           const newId = String(nextNum).padStart(5, '0')
           await pool.query('UPDATE tickets SET id = $1 WHERE id = $2', [newId, row.id])
           nextNum++
         }
-        if (uuidRows.length > 0) console.log(`✅ Migrated ${uuidRows.length} ticket IDs`)
+        console.log(`✅ Migrated ${uuidRows.length} ticket IDs`)
       }
       console.log('✅ Database initialized (PostgreSQL)')
     } else {
       const data = loadJSON()
       if (!data.tickets) data.tickets = []
       if (!data.people) data.people = ['איתי בר', 'אורי כוחיי', 'ליאור עגמי']
-      // Migrate UUIDs
+      // Add branch to existing tickets
       let changed = false
-      const uuids = data.tickets.filter(t => t.id.length > 5).sort((a, b) => a.createdAt > b.createdAt ? 1 : -1)
-      if (uuids.length > 0) {
-        const maxExisting = data.tickets.filter(t => t.id.length <= 5).map(t => parseInt(t.id)).sort((a, b) => b - a)
-        let nextNum = maxExisting.length > 0 ? maxExisting[0] + 1 : 1
-        for (const t of uuids) {
-          t.id = String(nextNum).padStart(5, '0')
-          nextNum++
-          changed = true
-        }
-      }
+      data.tickets.forEach(t => {
+        if (!t.branch) { t.branch = 'main'; changed = true }
+        if (t.escalated_to === undefined) { t.escalated_to = ''; changed = true }
+      })
       if (changed) saveJSON(data)
       console.log('✅ Database initialized (JSON file)')
     }
   },
 
-  async generateId() {
+  async generateId(branch) {
+    const prefix = branch === 'main' ? '' : branch.toUpperCase()
     if (usePostgres) {
-      const { rows } = await pool.query('SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) as max_id FROM tickets')
-      return String(parseInt(rows[0].max_id) + 1).padStart(5, '0')
+      const pattern = prefix ? prefix + '%' : '[0-9]%'
+      const { rows } = await pool.query(
+        `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(id, '[^0-9]', '', 'g') AS INTEGER)), 0) as max_id FROM tickets WHERE id LIKE $1`,
+        [pattern]
+      )
+      return prefix + String(parseInt(rows[0].max_id) + 1).padStart(5, '0')
     } else {
       const data = loadJSON()
-      const maxId = data.tickets.reduce((max, t) => Math.max(max, parseInt(t.id) || 0), 0)
-      return String(maxId + 1).padStart(5, '0')
+      const branchTickets = data.tickets.filter(t => (t.branch || 'main') === (branch === 'main' ? 'main' : branch))
+      const maxId = branchTickets.reduce((max, t) => {
+        const num = parseInt(t.id.replace(/[^0-9]/g, '')) || 0
+        return Math.max(max, num)
+      }, 0)
+      return prefix + String(maxId + 1).padStart(5, '0')
     }
   },
 
-  // Tickets
-  async getAllTickets() {
+  async getAllTickets(branch) {
     if (usePostgres) {
-      const { rows } = await pool.query('SELECT * FROM tickets ORDER BY created_at DESC')
-      return rows.map(rowToTicket)
+      if (branch === 'main') {
+        // Main sees own tickets + escalated tickets (as pointers)
+        const { rows } = await pool.query("SELECT * FROM tickets WHERE branch = 'main' OR escalated_to = 'main' ORDER BY created_at DESC")
+        return rows.map(rowToTicket)
+      } else {
+        const { rows } = await pool.query('SELECT * FROM tickets WHERE branch = $1 ORDER BY created_at DESC', [branch])
+        return rows.map(rowToTicket)
+      }
     } else {
-      return loadJSON().tickets.map(t => ({ ...t, notes: typeof t.notes === 'string' ? JSON.parse(t.notes) : (t.notes || []) }))
+      const data = loadJSON()
+      let tickets
+      if (branch === 'main') {
+        tickets = data.tickets.filter(t => (t.branch || 'main') === 'main' || t.escalated_to === 'main')
+      } else {
+        tickets = data.tickets.filter(t => t.branch === branch)
+      }
+      return tickets.map(jsonToTicket)
     }
   },
 
@@ -133,22 +157,24 @@ const db = {
     } else {
       const t = loadJSON().tickets.find(t => t.id === id)
       if (!t) return null
-      return { ...t, notes: typeof t.notes === 'string' ? JSON.parse(t.notes) : (t.notes || []) }
+      return jsonToTicket(t)
     }
   },
 
   async createTicket(ticket) {
     if (usePostgres) {
       await pool.query(
-        `INSERT INTO tickets (id, name, department, environment, equipment_type, fault_type, phone, subject, description, status, tech_on_call, assignee, notes, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-        [ticket.id, ticket.name, ticket.department, ticket.environment, ticket.equipmentType, ticket.faultType, ticket.phone, ticket.subject, ticket.description, ticket.status, ticket.techOnCall, ticket.assignee, JSON.stringify(ticket.notes), ticket.createdAt, ticket.updatedAt]
+        `INSERT INTO tickets (id, name, department, environment, equipment_type, fault_type, phone, subject, description, status, tech_on_call, assignee, notes, close_reason, closed_at, branch, escalated_to, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
+        [ticket.id, ticket.name, ticket.department, ticket.environment, ticket.equipmentType, ticket.faultType, ticket.phone, ticket.subject, ticket.description, ticket.status, ticket.techOnCall, ticket.assignee, JSON.stringify(ticket.notes), '', '', ticket.branch || 'main', '', ticket.createdAt, ticket.updatedAt]
       )
     } else {
       const data = loadJSON()
       data.tickets.push({
         ...ticket,
-        notes: JSON.stringify(ticket.notes)
+        notes: JSON.stringify(ticket.notes),
+        branch: ticket.branch || 'main',
+        escalated_to: ''
       })
       saveJSON(data)
     }
@@ -157,8 +183,8 @@ const db = {
   async updateTicket(id, updates) {
     if (usePostgres) {
       await pool.query(
-        'UPDATE tickets SET status=$1, tech_on_call=$2, assignee=$3, notes=$4, close_reason=$5, closed_at=$6, updated_at=$7 WHERE id=$8',
-        [updates.status, updates.techOnCall, updates.assignee, JSON.stringify(updates.notes), updates.closeReason || '', updates.closedAt || '', updates.updatedAt, id]
+        'UPDATE tickets SET status=$1, tech_on_call=$2, assignee=$3, notes=$4, close_reason=$5, closed_at=$6, escalated_to=$7, updated_at=$8 WHERE id=$9',
+        [updates.status, updates.techOnCall, updates.assignee, JSON.stringify(updates.notes), updates.closeReason || '', updates.closedAt || '', updates.escalatedTo || '', updates.updatedAt, id]
       )
     } else {
       const data = loadJSON()
@@ -170,6 +196,7 @@ const db = {
         data.tickets[index].notes = JSON.stringify(updates.notes)
         data.tickets[index].closeReason = updates.closeReason || ''
         data.tickets[index].closedAt = updates.closedAt || ''
+        data.tickets[index].escalated_to = updates.escalatedTo || ''
         data.tickets[index].updatedAt = updates.updatedAt
         saveJSON(data)
       }
@@ -186,39 +213,72 @@ const db = {
     }
   },
 
-  // People
-  async getPeople() {
+  async getPeople(branch = 'main') {
     if (usePostgres) {
-      const { rows } = await pool.query('SELECT name FROM people ORDER BY id')
+      const { rows } = await pool.query('SELECT name FROM people WHERE branch = $1 ORDER BY id', [branch])
       return rows.map(r => r.name)
     } else {
-      return loadJSON().people || []
+      const data = loadJSON()
+      if (!data.peopleByBranch) return data.people || []
+      return data.peopleByBranch[branch] || []
     }
   },
 
-  async addPerson(name) {
+  async addPerson(name, branch = 'main') {
     if (usePostgres) {
-      await pool.query('INSERT INTO people (name) VALUES ($1)', [name])
+      await pool.query('INSERT INTO people (name, branch) VALUES ($1, $2)', [name, branch])
     } else {
       const data = loadJSON()
-      if (data.people.includes(name)) throw new Error('exists')
-      data.people.push(name)
+      if (!data.peopleByBranch) {
+        data.peopleByBranch = { main: data.people || [] }
+        delete data.people
+      }
+      if (!data.peopleByBranch[branch]) data.peopleByBranch[branch] = []
+      if (data.peopleByBranch[branch].includes(name)) throw new Error('exists')
+      data.peopleByBranch[branch].push(name)
       saveJSON(data)
     }
   },
 
-  async removePerson(name) {
+  async removePerson(name, branch = 'main') {
     if (usePostgres) {
-      const result = await pool.query('DELETE FROM people WHERE name = $1', [name])
+      const result = await pool.query('DELETE FROM people WHERE name = $1 AND branch = $2', [name, branch])
       return result.rowCount > 0
     } else {
       const data = loadJSON()
-      const index = data.people.indexOf(name)
+      if (!data.peopleByBranch) return false
+      const list = data.peopleByBranch[branch]
+      if (!list) return false
+      const index = list.indexOf(name)
       if (index === -1) return false
-      data.people.splice(index, 1)
+      list.splice(index, 1)
       saveJSON(data)
       return true
     }
+  }
+}
+
+function jsonToTicket(t) {
+  return {
+    id: t.id,
+    name: t.name,
+    department: t.department,
+    environment: t.environment,
+    equipmentType: t.equipmentType || t.equipment_type || '',
+    faultType: t.faultType || t.fault_type || '',
+    closeReason: t.closeReason || t.close_reason || '',
+    closedAt: t.closedAt || t.closed_at || '',
+    branch: t.branch || 'main',
+    escalatedTo: t.escalatedTo || t.escalated_to || '',
+    phone: t.phone || '',
+    subject: t.subject,
+    description: t.description,
+    status: t.status,
+    techOnCall: t.techOnCall || t.tech_on_call || '',
+    assignee: t.assignee || '',
+    notes: typeof t.notes === 'string' ? JSON.parse(t.notes) : (t.notes || []),
+    createdAt: t.createdAt || t.created_at,
+    updatedAt: t.updatedAt || t.updated_at
   }
 }
 
@@ -233,6 +293,8 @@ function rowToTicket(row) {
     faultType: row.fault_type || '',
     closeReason: row.close_reason || '',
     closedAt: row.closed_at || '',
+    branch: row.branch || 'main',
+    escalatedTo: row.escalated_to || '',
     phone: row.phone || '',
     subject: row.subject,
     description: row.description,

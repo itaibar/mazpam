@@ -799,7 +799,7 @@
           <button onclick="toggleStatusPopup()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
         </div>
         <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-          <input type="text" id="statusLookupId" placeholder="מספר תקלה" inputmode="numeric" maxlength="5" style="margin:0; flex:1;" onkeydown="if(event.key==='Enter') lookupStatus()">
+          <input type="text" id="statusLookupId" placeholder="מספר תקלה" maxlength="6" style="margin:0; flex:1;" onkeydown="if(event.key==='Enter') lookupStatus()">
           <button type="button" class="btn-primary" onclick="lookupStatus()" style="width: auto; padding: 12px 24px;">בדוק</button>
         </div>
         <div id="statusLookupResult"></div>
@@ -1015,11 +1015,29 @@
         </div>
       </div>
 
+      <div id="escalationBadge" style="display:none; padding:8px 14px; background:#fff3e0; border:1px solid #ffcc80; border-radius:8px; margin-bottom:12px; font-size:13px; color:#e65100;">⬆️ תקלה הוסלמה לנפה ראשית</div>
+
       <div class="modal-footer">
         <button class="btn-danger" onclick="deleteTicket()">מחק</button>
         <div style="flex: 1;"></div>
         <button class="btn-primary" onclick="saveTicket()">שמור</button>
       </div>
+      <button id="escalateBtn" onclick="showEscalateModal()" style="display:none; width:100%; margin-top:10px; padding:12px; border-radius:10px; border:1px solid #ffcc80; background:#fff3e0; color:#e65100; font-size:15px; font-weight:600; cursor:pointer; font-family:'Rubik',inherit;">⬆️ הסלם לנפה ראשית</button>
+    </div>
+  </div>
+
+  <!-- Escalation Modal -->
+  <div id="escalateModal" class="modal" style="z-index:10000;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>⬆️ הסלמה לנפה ראשית</span>
+        <button onclick="document.getElementById('escalateModal').classList.remove('show')" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label>מה הגיל שלך? *</label>
+        <input type="number" id="escalateAge" placeholder="גיל" min="1" max="120" style="margin:0;">
+      </div>
+      <button class="btn-primary" onclick="confirmEscalate()">הסלם תקלה</button>
     </div>
   </div>
 
@@ -1072,20 +1090,49 @@
     let selectedTicket = null
     let currentTab = 0
     let adminToken = null
+    let adminTokenBranch = null
     let ticketInterval = null
     let currentPage = 1
     const PAGE_SIZE = 10
     let knownTicketIds = null
     let unacknowledgedCount = 0
     let alertSoundInterval = null
+    let branchInfo = { key: 'main', name: 'מזפם', prefix: '', isMain: true }
 
     async function init() {
+      await loadBranch()
       await loadConfig()
+    }
+
+    async function loadBranch() {
+      try {
+        const res = await fetch('/api/branch')
+        branchInfo = await res.json()
+        // Update header with branch name
+        const h1 = document.querySelector('header h1')
+        if (h1 && !branchInfo.isMain) {
+          h1.textContent = 'מערכת תקלות - ' + branchInfo.name
+        }
+        document.title = branchInfo.isMain ? 'מערכת תקלות' : 'מערכת תקלות - ' + branchInfo.name
+        // Update search placeholder
+        const lookupInput = document.getElementById('statusLookupId')
+        if (branchInfo.isMain) {
+          lookupInput.placeholder = 'לדוגמה: 1, M3, G5'
+        } else {
+          lookupInput.placeholder = 'מספר תקלה'
+          lookupInput.inputMode = 'numeric'
+          lookupInput.maxLength = 5
+        }
+      } catch (e) {
+        console.error('Error loading branch:', e)
+      }
     }
 
     async function loadConfig() {
       try {
-        const res = await fetch('/api/config')
+        const headers = {}
+        if (adminToken) headers['Authorization'] = 'Bearer ' + adminToken
+        const res = await fetch('/api/config', { headers })
         config = await res.json()
         populateSelects()
       } catch (e) {
@@ -1095,6 +1142,7 @@
 
     function populateSelects() {
       const deptSelect = document.getElementById('department')
+      deptSelect.innerHTML = '<option value="">בחר מכלול</option>'
       config.departments.forEach(dept => {
         const opt = document.createElement('option')
         opt.value = dept
@@ -1103,6 +1151,7 @@
       })
 
       const modalSta = document.getElementById('modalStatus')
+      modalSta.innerHTML = ''
       config.statuses.forEach(sta => {
         const opt = document.createElement('option')
         opt.value = sta
@@ -1353,6 +1402,7 @@
 
         if (res.ok) {
           adminToken = data.token
+          adminTokenBranch = data.branch
           loginError.classList.remove('show')
           document.getElementById('loginPopup').classList.remove('show')
 
@@ -1362,6 +1412,7 @@
           document.getElementById('adminTabBtn').style.display = 'inline-block'
           document.getElementById('createTabBtn').style.display = 'inline-block'
 
+          await loadConfig()
           loadTickets()
           ticketInterval = setInterval(loadTickets, 5000)
 
@@ -1385,6 +1436,7 @@
         })
       }
       adminToken = null
+      adminTokenBranch = null
       tickets = []
       knownTicketIds = null
       unacknowledgedCount = 0
@@ -1400,6 +1452,7 @@
       document.getElementById('adminPass').value = ''
       document.getElementById('adminContainer').innerHTML = ''
 
+      loadConfig()
       switchTab(0)
     }
 
@@ -1424,7 +1477,7 @@
         })
         if (res.ok) {
           const ticket = await res.json()
-          showSuccess(`✅ תקלה מספר #${ticket.id} נפתחה בהצלחה!`)
+          showSuccess(`✅ תקלה מספר ${parseInt(ticket.id.replace(/[^0-9]/g, ''))} נפתחה בהצלחה!`)
           e.target.reset()
           window.scrollTo({ top: 0, behavior: 'smooth' })
           await loadTickets()
@@ -1442,7 +1495,8 @@
       if (!input) { result.innerHTML = ''; return }
 
       try {
-        const res = await fetch(`/api/tickets/${parseInt(input)}/status`)
+        const lookupId = input.match(/^[A-Za-z]/) ? input.toUpperCase() : input.replace(/^0+/, '') || '0'
+        const res = await fetch(`/api/tickets/${lookupId}/status`)
         if (!res.ok) {
           result.innerHTML = '<div style="color:#c62828; padding:10px 0; text-align:center;">תקלה לא נמצאה</div>'
           return
@@ -1552,7 +1606,7 @@
 
       const headers = ['מספר', 'סטטוס', 'שם', 'טלפון', 'מכלול', 'סביבה', 'סוג ציוד', 'סיווג', 'כונן תקשוב', 'מטפל בבעיה', 'סיבת סגירה', 'נפתח', 'נסגר', 'זמן טיפול']
       const rows = filtered.map(t => [
-        t.id,
+        t.id.replace(/^([A-Z]?)0*(\d+)$/, '$1$2'),
         t.status,
         t.name,
         t.phone || '',
@@ -1663,7 +1717,7 @@
           <tbody>
             ${pageTickets.map(ticket => `
               <tr onclick="openModal('${ticket.id}')">
-                <td style="font-weight:600; color:#e67e22;">#${ticket.id}</td>
+                <td style="font-weight:600; color:#e67e22; white-space:nowrap;">${ticket.escalatedTo ? '⬆️ ' : ''}${ticket.id}</td>
                 <td><span class="status-badge ${getStatusBadgeClass(ticket)}">${ticket.status}</span></td>
                 <td>${ticket.name}</td>
                 <td>${ticket.phone || '-'}</td>
@@ -1714,10 +1768,78 @@
       document.getElementById('modalFaultType').value = selectedTicket.faultType || ''
       document.getElementById('modalPhone').value = selectedTicket.phone || ''
       document.getElementById('modalStatus').value = selectedTicket.status
-      document.getElementById('modalTechOnCall').value = selectedTicket.techOnCall || ''
-      document.getElementById('modalAssignee').value = selectedTicket.assignee || ''
       document.getElementById('modalNotes').value = selectedTicket.notes?.join('\n') || ''
       document.getElementById('modalDescription').textContent = selectedTicket.description
+
+      const techSelect = document.getElementById('modalTechOnCall')
+      const assigneeSelect = document.getElementById('modalAssignee')
+      const statusSelect = document.getElementById('modalStatus')
+      const notesField = document.getElementById('modalNotes')
+      const saveBtn = document.querySelector('.modal-footer .btn-primary')
+      const deleteBtn = document.querySelector('.modal-footer .btn-danger')
+      const adminBranch = adminToken ? (adminTokenBranch || 'main') : 'main'
+      const isEscalatedToMain = selectedTicket.escalatedTo === 'main' && adminBranch === 'main'
+      const isEscalatedSubBranch = selectedTicket.escalatedTo === 'main' && adminBranch !== 'main'
+
+      if (isEscalatedToMain) {
+        // Main viewing escalated: show techOnCall as plain text, not editable
+        const techValue = selectedTicket.techOnCall
+        if (techValue) {
+          // Replace dropdown with a disabled input showing the name
+          techSelect.innerHTML = `<option value="${techValue}">${techValue} (נפה)</option>`
+          techSelect.value = techValue
+        } else {
+          techSelect.value = ''
+        }
+        techSelect.disabled = true
+      } else {
+        techSelect.value = selectedTicket.techOnCall || ''
+        techSelect.disabled = false
+      }
+
+      assigneeSelect.value = selectedTicket.assignee || ''
+
+      if (isEscalatedSubBranch) {
+        // Sub-branch viewing their escalated ticket: lock everything
+        // Show assignee even if not in sub-branch people list
+        const assigneeValue = selectedTicket.assignee
+        if (assigneeValue && !Array.from(assigneeSelect.options).some(o => o.value === assigneeValue)) {
+          const opt = document.createElement('option')
+          opt.value = assigneeValue
+          opt.textContent = assigneeValue + ' (ראשית)'
+          assigneeSelect.appendChild(opt)
+        }
+        assigneeSelect.value = assigneeValue || ''
+
+        statusSelect.disabled = true
+        techSelect.disabled = true
+        assigneeSelect.disabled = true
+        notesField.disabled = true
+        saveBtn.style.display = 'none'
+        deleteBtn.style.display = 'none'
+      } else {
+        statusSelect.disabled = false
+        if (!isEscalatedToMain) techSelect.disabled = false
+        assigneeSelect.disabled = false
+        notesField.disabled = false
+        saveBtn.style.display = ''
+        deleteBtn.style.display = ''
+      }
+
+      // Show escalation button/badge
+      const escalateBtn = document.getElementById('escalateBtn')
+      const escalationBadge = document.getElementById('escalationBadge')
+
+      if (selectedTicket.escalatedTo) {
+        escalationBadge.style.display = 'block'
+        escalateBtn.style.display = 'none'
+      } else if (adminBranch !== 'main') {
+        escalationBadge.style.display = 'none'
+        escalateBtn.style.display = 'block'
+      } else {
+        escalationBadge.style.display = 'none'
+        escalateBtn.style.display = 'none'
+      }
 
       document.getElementById('editModal').classList.add('show')
     }
@@ -1725,6 +1847,8 @@
     function closeModal() {
       document.getElementById('editModal').classList.remove('show')
       selectedTicket = null
+      // Reset dropdowns to remove temporary options
+      populatePeopleDropdowns()
     }
 
     async function saveTicket() {
@@ -1775,6 +1899,48 @@
     function cancelCloseReason() {
       document.getElementById('closeReasonModal').classList.remove('show')
       document.getElementById('modalStatus').value = selectedTicket.status
+    }
+
+    function showEscalateModal() {
+      document.getElementById('escalateAge').value = ''
+      document.getElementById('escalateModal').classList.add('show')
+    }
+
+    async function confirmEscalate() {
+      const age = document.getElementById('escalateAge').value
+      if (!age) { alert('יש להזין גיל'); return }
+
+      try {
+        // Save ticket first
+        await fetch(`/api/tickets/${selectedTicket.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({
+            status: document.getElementById('modalStatus').value,
+            techOnCall: document.getElementById('modalTechOnCall').value,
+            assignee: document.getElementById('modalAssignee').value,
+            notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim())
+          })
+        })
+
+        // Then escalate
+        const res = await fetch(`/api/tickets/${selectedTicket.id}/escalate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({ age: parseInt(age) })
+        })
+        const data = await res.json()
+        if (res.ok) {
+          document.getElementById('escalateModal').classList.remove('show')
+          closeModal()
+          await loadTickets()
+          showSuccess('⬆️ תקלה הוסלמה לנפה ראשית בהצלחה!')
+        } else {
+          alert(data.error || 'שגיאה בהסלמה')
+        }
+      } catch (e) {
+        alert('שגיאת תקשורת')
+      }
     }
 
     async function deleteTicket() {
