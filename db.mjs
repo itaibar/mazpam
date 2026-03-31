@@ -111,11 +111,19 @@ const db = {
   async generateId(branch) {
     const prefix = branch === 'main' ? '' : branch.toUpperCase()
     if (usePostgres) {
-      const pattern = prefix ? prefix + '%' : '[0-9]%'
-      const { rows } = await pool.query(
-        `SELECT COALESCE(MAX(CAST(REGEXP_REPLACE(id, '[^0-9]', '', 'g') AS INTEGER)), 0) as max_id FROM tickets WHERE id LIKE $1`,
-        [pattern]
-      )
+      let rows
+      if (prefix) {
+        const result = await pool.query(
+          `SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 2) AS INTEGER)), 0) as max_id FROM tickets WHERE id LIKE $1`,
+          [prefix + '%']
+        )
+        rows = result.rows
+      } else {
+        const result = await pool.query(
+          `SELECT COALESCE(MAX(CAST(id AS INTEGER)), 0) as max_id FROM tickets WHERE id ~ '^[0-9]+$'`
+        )
+        rows = result.rows
+      }
       return prefix + String(parseInt(rows[0].max_id) + 1).padStart(5, '0')
     } else {
       const data = loadJSON()
