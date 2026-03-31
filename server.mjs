@@ -35,20 +35,35 @@ function isAdmin(req) {
 }
 
 // Detect branch from Host header
-function getBranchFromHost(req) {
+// Build path->branch lookup from BRANCHES config
+const PATH_BRANCHES = {}
+for (const [key, branch] of Object.entries(BRANCHES)) {
+  if (branch.subdomain) PATH_BRANCHES['/' + branch.subdomain] = key
+}
+
+function getBranchFromRequest(req) {
   const host = (req.headers['host'] || '').split(':')[0].toLowerCase()
-  // Check if it's a known subdomain
+
+  // Check subdomain first
   for (const [key, branch] of Object.entries(BRANCHES)) {
     if (branch.subdomain && host.startsWith(branch.subdomain + '.')) {
-      return key
+      return { branch: key, pathPrefix: '' }
     }
   }
-  // Only allow exact main domain or localhost - no unknown subdomains
+
+  // Check path-based routing: /amakim, /gdor, etc.
+  for (const [pathPrefix, branchKey] of Object.entries(PATH_BRANCHES)) {
+    if (req.url === pathPrefix || req.url.startsWith(pathPrefix + '/') || req.url.startsWith(pathPrefix + '?')) {
+      return { branch: branchKey, pathPrefix }
+    }
+  }
+
+  // Only allow exact main domain or localhost
   const allowedHosts = ['takalot.online', 'mazpam-web.onrender.com', 'localhost', '127.0.0.1']
   if (allowedHosts.includes(host)) {
-    return 'main'
+    return { branch: 'main', pathPrefix: '' }
   }
-  return null // unknown subdomain
+  return { branch: null, pathPrefix: '' }
 }
 
 const ticketConfigs = {
@@ -97,7 +112,12 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return }
 
-  const hostBranch = getBranchFromHost(req)
+  const { branch: hostBranch, pathPrefix } = getBranchFromRequest(req)
+
+  // Strip path prefix so routes work normally
+  if (pathPrefix) {
+    req.url = req.url.slice(pathPrefix.length) || '/'
+  }
 
   if (hostBranch === null) {
     res.writeHead(403, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -113,7 +133,7 @@ const server = http.createServer(async (req, res) => {
     // Branch info (public) - tells the frontend which branch this is
     if (req.url === '/api/branch' && req.method === 'GET') {
       const b = BRANCHES[hostBranch]
-      json(res, 200, { key: hostBranch, name: b.name, prefix: b.prefix, isMain: hostBranch === 'main' }); return
+      json(res, 200, { key: hostBranch, name: b.name, prefix: b.prefix, isMain: hostBranch === 'main', pathPrefix }); return
     }
 
     // Login - check credentials for this branch

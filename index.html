@@ -1091,6 +1091,7 @@
     let currentTab = 0
     let adminToken = null
     let adminTokenBranch = null
+    let apiBase = ''  // path prefix for API calls, e.g. '/gdor'
     let ticketInterval = null
     let currentPage = 1
     const PAGE_SIZE = 10
@@ -1106,8 +1107,12 @@
 
     async function loadBranch() {
       try {
-        const res = await fetch('/api/branch')
+        // Detect path prefix from current URL
+        const pathMatch = window.location.pathname.match(/^\/(amakim|mifratz|hof|gdor)/)
+        apiBase = pathMatch ? '/' + pathMatch[1] : ''
+        const res = await fetch(apiBase + '/api/branch')
         branchInfo = await res.json()
+        apiBase = branchInfo.pathPrefix || apiBase
         // Update header with branch name
         const h1 = document.querySelector('header h1')
         if (h1 && !branchInfo.isMain) {
@@ -1132,7 +1137,7 @@
       try {
         const headers = {}
         if (adminToken) headers['Authorization'] = 'Bearer ' + adminToken
-        const res = await fetch('/api/config', { headers })
+        const res = await fetch(apiBase + '/api/config', { headers })
         config = await res.json()
         populateSelects()
       } catch (e) {
@@ -1224,7 +1229,7 @@
       if (!name) return
 
       try {
-        const res = await fetch('/api/people', {
+        const res = await fetch(apiBase + '/api/people', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
           body: JSON.stringify({ name })
@@ -1247,7 +1252,7 @@
       if (!confirm(`להסיר את ${name}?`)) return
 
       try {
-        const res = await fetch('/api/people/' + encodeURIComponent(name), {
+        const res = await fetch(apiBase + '/api/people/' + encodeURIComponent(name), {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + adminToken }
         })
@@ -1265,7 +1270,7 @@
     async function loadTickets() {
       if (!adminToken) return
       try {
-        const res = await fetch('/api/tickets', {
+        const res = await fetch(apiBase + '/api/tickets', {
           headers: { 'Authorization': 'Bearer ' + adminToken }
         })
         if (res.status === 401) {
@@ -1393,7 +1398,7 @@
       const loginError = document.getElementById('loginError')
 
       try {
-        const res = await fetch('/api/login', {
+        const res = await fetch(apiBase + '/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
@@ -1430,7 +1435,7 @@
 
     function adminLogout() {
       if (adminToken) {
-        fetch('/api/logout', {
+        fetch(apiBase + '/api/logout', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + adminToken }
         })
@@ -1470,7 +1475,7 @@
       }
 
       try {
-        const res = await fetch('/api/tickets', {
+        const res = await fetch(apiBase + '/api/tickets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form)
@@ -1496,7 +1501,7 @@
 
       try {
         const lookupId = input.match(/^[A-Za-z]/) ? input.toUpperCase() : input.replace(/^0+/, '') || '0'
-        const res = await fetch(`/api/tickets/${lookupId}/status`)
+        const res = await fetch(`${apiBase}/api/tickets/${lookupId}/status`)
         if (!res.ok) {
           result.innerHTML = '<div style="color:#c62828; padding:10px 0; text-align:center;">תקלה לא נמצאה</div>'
           return
@@ -1867,7 +1872,7 @@
 
     async function doSaveTicket(extra) {
       try {
-        await fetch(`/api/tickets/${selectedTicket.id}`, {
+        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
           body: JSON.stringify({
@@ -1912,7 +1917,7 @@
 
       try {
         // Save ticket first
-        await fetch(`/api/tickets/${selectedTicket.id}`, {
+        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
           body: JSON.stringify({
@@ -1924,7 +1929,7 @@
         })
 
         // Then escalate
-        const res = await fetch(`/api/tickets/${selectedTicket.id}/escalate`, {
+        const res = await fetch(`${apiBase}/api/tickets/${selectedTicket.id}/escalate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
           body: JSON.stringify({ age: parseInt(age) })
@@ -1946,7 +1951,7 @@
     async function deleteTicket() {
       if (!selectedTicket || !confirm('האם אתה בטוח שברצונך למחוק כרטיס זה?')) return
       try {
-        await fetch(`/api/tickets/${selectedTicket.id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + adminToken } })
+        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + adminToken } })
         await loadTickets()
         closeModal()
         showSuccess('✅ כרטיס נמחק בהצלחה!')
