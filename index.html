@@ -579,7 +579,6 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
-      overflow-y: auto;
     }
 
     .modal.show {
@@ -592,8 +591,9 @@
       padding: 36px;
       max-width: 600px;
       width: 100%;
-      max-height: 90vh;
+      max-height: 85vh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       box-shadow: 0 25px 60px rgba(0,0,0,0.15);
       animation: modalIn 0.25s ease;
       border: 1px solid rgba(230,126,34,0.1);
@@ -905,39 +905,12 @@
         font-size: 16px;
       }
 
-      .modal {
-        padding: 0;
-        align-items: flex-end;
-      }
-
       .modal-content {
-        max-width: 100% !important;
-        width: 100% !important;
-        border-radius: 14px 14px 0 0;
-        max-height: 85vh;
-        margin: 0;
-        padding: 20px;
-      }
-
-      .login-popup {
-        padding: 0;
-        align-items: flex-end;
-      }
-
-      .login-popup-content {
-        max-width: 100% !important;
-        width: 100% !important;
-        border-radius: 14px 14px 0 0;
+        max-width: 95%;
       }
 
       .content {
         padding: 16px;
-      }
-
-      .page-btn {
-        width: 30px;
-        height: 30px;
-        font-size: 12px;
       }
 
       #pagination {
