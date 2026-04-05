@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3001
 
 // Branch configuration
 const BRANCHES = {
-  main:    { name: 'מזפם', prefix: '',  admin: 'admin',   pass: process.env.ADMIN_PASS || 'admin123', subdomain: '' },
+  main:    { name: 'מצפם', prefix: '',  admin: 'admin',   pass: process.env.ADMIN_PASS || 'admin123', subdomain: '' },
   A:       { name: 'עמקים', prefix: 'A', admin: 'admin_a', pass: process.env.ADMIN_PASS_A || 'amakim!@#', subdomain: 'amakim' },
   M:       { name: 'מפרץ', prefix: 'M', admin: 'admin_m', pass: process.env.ADMIN_PASS_M || 'mifratz!@#', subdomain: 'mifratz' },
   H:       { name: 'חוף',   prefix: 'H', admin: 'admin_h', pass: process.env.ADMIN_PASS_H || 'hof!@#', subdomain: 'hof' },
@@ -264,34 +264,182 @@ const server = http.createServer(async (req, res) => {
       const ticket = await db.getTicket(id)
       if (!ticket) { json(res, 404, { error: 'Ticket not found' }); return }
       if (ticket.branch !== adminBranch) { json(res, 403, { error: 'אין הרשאה' }); return }
-      if (ticket.escalatedTo) { json(res, 400, { error: 'תקלה כבר הוסלמה' }); return }
+      if (ticket.escalationStatus === 'בטיפול נפה ממונה') { json(res, 400, { error: 'תקלה כבר בטיפול נפה ממונה' }); return }
 
       const data = JSON.parse(await readBody(req))
-      // Escalation policy: age > 30
-      const age = parseInt(data.age)
-      if (!age || age <= 30) {
-        json(res, 400, { error: 'לא ניתן להסלים: יש להיות מעל גיל 30' }); return
+
+      // Save escalation questionnaire answers (first time only)
+      if (data.answers && !ticket.escalationAnswers) {
+        ticket.escalationAnswers = JSON.stringify(data.answers)
       }
 
       ticket.escalatedTo = 'main'
+      ticket.escalationStatus = 'בטיפול נפה ממונה'
+      ticket.status = 'בטיפול נפה ממונה'
       ticket.updatedAt = new Date().toISOString()
+
+      const branchConfig = BRANCHES[adminBranch]
+      ticket.messages = ticket.messages || []
+      if (ticket.messages.length === 0) {
+        // First escalation - add ticket details
+        ticket.messages.push({
+          sender: 'system',
+          branch: branchConfig.name,
+          text: `📋 פרטי תקלה ${ticket.id}\nנפה: ${branchConfig.name}\nשם: ${ticket.name}\nמכלול: ${ticket.department}\nסביבה: ${ticket.environment}\nסוג ציוד: ${ticket.equipmentType}\nכותרת: ${ticket.subject}\nתיאור: ${ticket.description}`,
+          timestamp: new Date().toISOString()
+        })
+      } else {
+        // Re-escalation
+        ticket.messages.push({
+          sender: 'system',
+          branch: 'מערכת',
+          text: `⬆️ התקלה הוסלמה שוב לנפה ממונה על ידי ${branchConfig.name}`,
+          timestamp: new Date().toISOString()
+        })
+      }
+
       await db.updateTicket(id, ticket)
       json(res, 200, { ...ticket, sla: calculateSLA(ticket.createdAt) }); return
+    }
+
+    // De-escalate ticket (main admin returns to sub-branch)
+    if (req.url.match(/^\/api\/tickets\/[A-Z][0-9]+\/deescalate$/) && req.method === 'POST') {
+      const adminBranch = getAdminBranch(req)
+      if (!adminBranch) { json(res, 401, { error: 'Unauthorized' }); return }
+      if (adminBranch !== 'main') { json(res, 403, { error: 'רק נפה ראשית יכולה להחזיר תקלה' }); return }
+
+      const id = req.url.split('/')[3]
+      const ticket = await db.getTicket(id)
+      if (!ticket) { json(res, 404, { error: 'Ticket not found' }); return }
+      if (!ticket.escalatedTo) { json(res, 400, { error: 'תקלה לא מוסלמת' }); return }
+
+      // Keep escalatedTo = 'main' so main always sees it
+      ticket.escalationStatus = 'טופל ע״י נפה ממונה'
+      ticket.status = 'טופל ע״י נפה ממונה'
+      ticket.updatedAt = new Date().toISOString()
+      ticket.messages = ticket.messages || []
+      ticket.messages.push({
+        sender: 'system',
+        branch: 'מערכת',
+        text: '↩️ התקלה הוחזרה לנפה על ידי נפה ממונה',
+        timestamp: new Date().toISOString()
+      })
+      await db.updateTicket(id, ticket)
+      json(res, 200, { ...ticket, sla: calculateSLA(ticket.createdAt) }); return
+    }
+
+    // Check for new chat messages across all escalated tickets
+    if (req.url === '/api/chat/updates' && req.method === 'GET') {
+      const adminBranch = getAdminBranch(req)
+      if (!adminBranch) { json(res, 401, { error: 'Unauthorized' }); return }
+      const allTickets = await db.getAllTickets(adminBranch)
+      const myAdmin = BRANCHES[adminBranch].admin
+      const updates = allTickets
+        .filter(t => t.escalatedTo && t.messages && t.messages.length > 0)
+        .map(t => {
+          const lastMsg = t.messages[t.messages.length - 1]
+          return { ticketId: t.id, messageCount: t.messages.length, lastSender: lastMsg.sender, lastText: lastMsg.text, lastTimestamp: lastMsg.timestamp }
+        })
+      json(res, 200, { updates, myAdmin }); return
+    }
+
+    // Add message to ticket (admin - both branches)
+    if (req.url.match(/^\/api\/tickets\/[A-Z][0-9]+\/messages$/) && req.method === 'POST') {
+      const adminBranch = getAdminBranch(req)
+      if (!adminBranch) { json(res, 401, { error: 'Unauthorized' }); return }
+
+      const id = req.url.split('/')[3]
+      const ticket = await db.getTicket(id)
+      if (!ticket) { json(res, 404, { error: 'Ticket not found' }); return }
+      if (!ticket.escalatedTo) { json(res, 400, { error: 'צ׳אט זמין רק לתקלות מוסלמות' }); return }
+
+      const data = JSON.parse(await readBody(req))
+      if (!data.text?.trim()) { json(res, 400, { error: 'Missing text' }); return }
+
+      const branchConfig = BRANCHES[adminBranch]
+      const message = {
+        sender: branchConfig.admin,
+        branch: branchConfig.name,
+        text: data.text.trim(),
+        timestamp: new Date().toISOString()
+      }
+
+      ticket.messages = ticket.messages || []
+      ticket.messages.push(message)
+      ticket.updatedAt = new Date().toISOString()
+      await db.updateTicket(id, ticket)
+      json(res, 201, { messages: ticket.messages }); return
+    }
+
+    // Get messages for ticket (admin - both branches)
+    if (req.url.match(/^\/api\/tickets\/[A-Z][0-9]+\/messages$/) && req.method === 'GET') {
+      const adminBranch = getAdminBranch(req)
+      if (!adminBranch) { json(res, 401, { error: 'Unauthorized' }); return }
+
+      const id = req.url.split('/')[3]
+      const ticket = await db.getTicket(id)
+      if (!ticket) { json(res, 404, { error: 'Ticket not found' }); return }
+      json(res, 200, { messages: ticket.messages || [] }); return
     }
 
     // Update ticket (admin)
     if (req.url.match(/^\/api\/tickets\/[A-Z]?[0-9]+$/) && req.method === 'PATCH') {
       if (!isAdmin(req)) { json(res, 401, { error: 'Unauthorized' }); return }
+      const adminBranch = getAdminBranch(req)
       const id = req.url.split('/')[3]
       const ticket = await db.getTicket(id)
       if (!ticket) { json(res, 404, { error: 'Ticket not found' }); return }
+
+      // Sub-branch can't edit when actively escalated (בטיפול נפה ממונה)
+      if (ticket.escalationStatus === 'בטיפול נפה ממונה' && adminBranch !== 'main') {
+        json(res, 403, { error: 'תקלה בטיפול נפה ממונה - לא ניתן לערוך' }); return
+      }
+
       const data = JSON.parse(await readBody(req))
-      if (data.status !== undefined) ticket.status = data.status
-      if (data.techOnCall !== undefined) ticket.techOnCall = data.techOnCall
-      if (data.assignee !== undefined) ticket.assignee = data.assignee
-      if (data.notes !== undefined) ticket.notes = data.notes
-      if (data.closeReason !== undefined) ticket.closeReason = data.closeReason
-      if (data.closedAt !== undefined) ticket.closedAt = data.closedAt
+      const changes = []
+      const branchName = BRANCHES[adminBranch].name
+
+      // Main branch can only change escalationStatus on escalated tickets, not the real status
+      if (adminBranch === 'main' && ticket.escalatedTo) {
+        if (data.escalationStatus !== undefined) ticket.escalationStatus = data.escalationStatus
+        if (data.assignee !== undefined && data.assignee !== ticket.assignee) {
+          changes.push(`מטפל בבעיה: ${data.assignee || 'ללא'}`)
+          ticket.assignee = data.assignee
+        }
+        if (data.notes !== undefined) ticket.notes = data.notes
+      } else {
+        // Sub-branch or main on own tickets - full control
+        if (data.status !== undefined && data.status !== ticket.status) {
+          changes.push(`סטטוס: ${data.status}`)
+          ticket.status = data.status
+        }
+        if (data.techOnCall !== undefined && data.techOnCall !== ticket.techOnCall) {
+          changes.push(`כונן תקשוב: ${data.techOnCall || 'ללא'}`)
+          ticket.techOnCall = data.techOnCall
+        }
+        if (data.assignee !== undefined && data.assignee !== ticket.assignee) {
+          changes.push(`מטפל בבעיה: ${data.assignee || 'ללא'}`)
+          ticket.assignee = data.assignee
+        }
+        if (data.notes !== undefined) ticket.notes = data.notes
+        if (data.closeReason !== undefined && data.closeReason !== ticket.closeReason) {
+          changes.push(`סיבת סגירה: ${data.closeReason}`)
+          ticket.closeReason = data.closeReason
+        }
+        if (data.closedAt !== undefined) ticket.closedAt = data.closedAt
+      }
+
+      // Add system message for changes on escalated tickets
+      if (ticket.escalatedTo && changes.length > 0) {
+        ticket.messages = ticket.messages || []
+        ticket.messages.push({
+          sender: 'system',
+          branch: 'מערכת',
+          text: `🔄 ${branchName} עדכן/ה:\n${changes.join('\n')}`,
+          timestamp: new Date().toISOString()
+        })
+      }
+
       ticket.updatedAt = new Date().toISOString()
       await db.updateTicket(id, ticket)
       json(res, 200, { ...ticket, sla: calculateSLA(ticket.createdAt) }); return

@@ -51,6 +51,9 @@ const db = {
           closed_at TEXT DEFAULT '',
           branch TEXT DEFAULT 'main',
           escalated_to TEXT DEFAULT '',
+          escalation_status TEXT DEFAULT '',
+          messages TEXT DEFAULT '[]',
+          escalation_answers TEXT DEFAULT '',
           created_at TEXT NOT NULL,
           updated_at TEXT NOT NULL
         )
@@ -79,6 +82,9 @@ const db = {
       try { await pool.query("ALTER TABLE tickets ADD COLUMN closed_at TEXT DEFAULT ''") } catch(e) {}
       try { await pool.query("ALTER TABLE tickets ADD COLUMN branch TEXT DEFAULT 'main'") } catch(e) {}
       try { await pool.query("ALTER TABLE tickets ADD COLUMN escalated_to TEXT DEFAULT ''") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN escalation_status TEXT DEFAULT ''") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN messages TEXT DEFAULT '[]'") } catch(e) {}
+      try { await pool.query("ALTER TABLE tickets ADD COLUMN escalation_answers TEXT DEFAULT ''") } catch(e) {}
 
       // Migrate UUIDs
       const { rows: uuidRows } = await pool.query("SELECT id FROM tickets WHERE id ~ '[a-f]' ORDER BY created_at ASC")
@@ -191,8 +197,8 @@ const db = {
   async updateTicket(id, updates) {
     if (usePostgres) {
       await pool.query(
-        'UPDATE tickets SET status=$1, tech_on_call=$2, assignee=$3, notes=$4, close_reason=$5, closed_at=$6, escalated_to=$7, updated_at=$8 WHERE id=$9',
-        [updates.status, updates.techOnCall, updates.assignee, JSON.stringify(updates.notes), updates.closeReason || '', updates.closedAt || '', updates.escalatedTo || '', updates.updatedAt, id]
+        'UPDATE tickets SET status=$1, tech_on_call=$2, assignee=$3, notes=$4, close_reason=$5, closed_at=$6, escalated_to=$7, escalation_status=$8, messages=$9, escalation_answers=$10, updated_at=$11 WHERE id=$12',
+        [updates.status, updates.techOnCall, updates.assignee, JSON.stringify(updates.notes), updates.closeReason || '', updates.closedAt || '', updates.escalatedTo || '', updates.escalationStatus || '', JSON.stringify(updates.messages || []), updates.escalationAnswers || '', updates.updatedAt, id]
       )
     } else {
       const data = loadJSON()
@@ -205,6 +211,9 @@ const db = {
         data.tickets[index].closeReason = updates.closeReason || ''
         data.tickets[index].closedAt = updates.closedAt || ''
         data.tickets[index].escalated_to = updates.escalatedTo || ''
+        data.tickets[index].escalation_status = updates.escalationStatus || ''
+        data.tickets[index].messages = JSON.stringify(updates.messages || [])
+        data.tickets[index].escalation_answers = updates.escalationAnswers || ''
         data.tickets[index].updatedAt = updates.updatedAt
         saveJSON(data)
       }
@@ -278,6 +287,9 @@ function jsonToTicket(t) {
     closedAt: t.closedAt || t.closed_at || '',
     branch: t.branch || 'main',
     escalatedTo: t.escalatedTo || t.escalated_to || '',
+    escalationStatus: t.escalationStatus || t.escalation_status || '',
+    messages: typeof (t.messages || t.messages) === 'string' ? JSON.parse(t.messages || '[]') : (t.messages || []),
+    escalationAnswers: t.escalationAnswers || t.escalation_answers || '',
     phone: t.phone || '',
     subject: t.subject,
     description: t.description,
@@ -303,6 +315,9 @@ function rowToTicket(row) {
     closedAt: row.closed_at || '',
     branch: row.branch || 'main',
     escalatedTo: row.escalated_to || '',
+    escalationStatus: row.escalation_status || '',
+    messages: row.messages ? JSON.parse(row.messages) : [],
+    escalationAnswers: row.escalation_answers || '',
     phone: row.phone || '',
     subject: row.subject,
     description: row.description,

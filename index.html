@@ -365,6 +365,166 @@
     .status-badge-progress { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
     .status-badge-hold     { background: #fce4ec; color: #c62828; border: 1px solid #ef9a9a; }
     .status-badge-closed   { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .status-badge-escalated { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+    .status-badge-returned  { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+
+    .chat-tray {
+      position: fixed;
+      bottom: 0;
+      left: 24px;
+      display: flex;
+      gap: 10px;
+      z-index: 9998;
+      align-items: flex-end;
+    }
+
+    .chat-window {
+      width: 320px;
+      background: white;
+      border-radius: 14px 14px 0 0;
+      box-shadow: 0 -4px 30px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: chatSlideUp 0.25s ease;
+    }
+
+    .chat-window.minimized {
+      height: auto !important;
+    }
+
+    .chat-window.minimized .chat-body {
+      display: none;
+    }
+
+    @keyframes chatSlideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      color: white;
+      padding: 10px 14px;
+      font-weight: 600;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .chat-header-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-header-btns button {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.8);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .chat-header-btns button:hover {
+      color: white;
+    }
+
+    .chat-body {
+      display: flex;
+      flex-direction: column;
+      height: 340px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: #f5f5f5;
+    }
+
+    .chat-msg {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .chat-msg-mine {
+      align-self: flex-start;
+      background: #e3f2fd;
+      color: #1565c0;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-msg-other {
+      align-self: flex-end;
+      background: white;
+      color: #333;
+      border: 1px solid #e0e0e0;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-msg-sender {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      opacity: 0.7;
+    }
+
+    .chat-msg-time {
+      font-size: 10px;
+      opacity: 0.5;
+      margin-top: 3px;
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 8px 10px;
+      border-top: 1px solid #e8e8e8;
+      background: white;
+      flex-shrink: 0;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      height: 34px;
+      margin: 0;
+      font-size: 13px;
+      border-radius: 18px;
+      padding: 0 14px;
+    }
+
+    .chat-input-area button {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      padding: 0;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+      .chat-tray {
+        left: 8px;
+        right: 8px;
+        flex-direction: column;
+      }
+      .chat-window {
+        width: 100%;
+      }
+    }
 
     .page-btn {
       width: 36px;
@@ -717,7 +877,7 @@
       }
 
       #dashboardCards {
-        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-columns: repeat(3, 1fr) !important;
       }
 
       header h1 {
@@ -917,13 +1077,14 @@
       <!-- Tab 1: Admin (only visible when logged in) -->
       <div class="tab-content">
         <!-- Dashboard Cards -->
-        <div id="dashboardCards" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;"></div>
+        <div id="dashboardCards" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px;"></div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
           <h2>ניהול תקלות</h2>
           <div style="display: flex; align-items: center; gap: 10px;">
             <input type="hidden" id="statusFilter" value="">
             <button class="btn-secondary" onclick="exportCSV()" style="padding: 8px 12px; font-size: 13px;">📥 CSV</button>
+            <button class="btn-secondary" onclick="toggleMessagesModal()" style="padding: 8px 12px; font-size: 13px;">💬 הודעות</button>
             <button id="subBranchFilterBtn" class="btn-secondary" onclick="toggleSubBranchFilter()" style="display:none; padding: 8px 12px; font-size: 13px;">🔀 נפות</button>
             <button class="btn-secondary" onclick="togglePeopleModal()" style="padding: 8px 12px; font-size: 13px;">👥 אנשים</button>
           </div>
@@ -1009,6 +1170,9 @@
         <textarea id="modalNotes"></textarea>
       </div>
 
+      <!-- Chat button (only for escalated tickets) -->
+      <button id="openChatBtn" onclick="toggleChatWindow()" style="display:none; width:100%; margin-bottom:12px; padding:10px; border-radius:10px; border:1px solid #90caf9; background:#e3f2fd; color:#1565c0; font-size:14px; font-weight:600; cursor:pointer; font-family:'Rubik',inherit;">💬 פתח צ׳אט</button>
+
       <div class="form-group" style="margin-bottom: 16px;">
         <label>תיאור הבעיה:</label>
         <div style="padding: 12px; background: #fafafa; border-radius: 8px; margin-top: 8px; border: 1px solid #eee;">
@@ -1016,29 +1180,35 @@
         </div>
       </div>
 
-      <div id="escalationBadge" style="display:none; padding:8px 14px; background:#fff3e0; border:1px solid #ffcc80; border-radius:8px; margin-bottom:12px; font-size:13px; color:#e65100;">⬆️ תקלה הוסלמה לנפה ראשית</div>
+      <div style="margin-bottom:12px;">
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div id="escalationBadge" style="display:none; padding:8px 14px; background:#fff3e0; border:1px solid #ffcc80; border-radius:8px; font-size:13px; color:#e65100; flex:1;">⬆️ תקלה הוסלמה לנפה ראשית</div>
+          <button id="viewAnswersBtn" onclick="toggleAnswersView()" style="display:none; padding:8px 14px; border-radius:8px; border:1px solid #90caf9; background:#e3f2fd; color:#1565c0; font-size:13px; font-weight:500; cursor:pointer; font-family:'Rubik',inherit; white-space:nowrap;">📝 שאלון</button>
+        </div>
+        <div id="answersView" style="display:none; padding:12px 14px; background:#f9f9f9; border:1px solid #e0e0e0; border-radius:10px; margin-top:8px; font-size:13px; white-space:pre-line; color:#555; line-height:1.6;"></div>
+      </div>
 
       <div class="modal-footer">
         <button class="btn-danger" onclick="deleteTicket()">מחק</button>
         <div style="flex: 1;"></div>
+        <button id="deescalateBtn" onclick="deescalateTicket()" style="display:none; padding:12px 24px; border-radius:10px; border:1px solid #a5d6a7; background:#e8f5e9; color:#2e7d32; font-size:14px; font-weight:600; cursor:pointer; font-family:'Rubik',inherit; white-space:nowrap;">↩️ החזר&nbsp;לנפה</button>
         <button class="btn-primary" onclick="saveTicket()">שמור</button>
       </div>
       <button id="escalateBtn" onclick="showEscalateModal()" style="display:none; width:100%; margin-top:10px; padding:12px; border-radius:10px; border:1px solid #ffcc80; background:#fff3e0; color:#e65100; font-size:15px; font-weight:600; cursor:pointer; font-family:'Rubik',inherit;">⬆️ הסלם לנפה ראשית</button>
     </div>
   </div>
 
-  <!-- Escalation Modal -->
+  <!-- Chat Tray (multiple chat windows) -->
+  <div class="chat-tray" id="chatTray"></div>
+
+  <!-- Escalation Questionnaire Modal -->
   <div id="escalateModal" class="modal" style="z-index:10000;">
-    <div class="modal-content" style="max-width: 400px;">
+    <div class="modal-content" style="max-width: 450px;">
       <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
         <span>⬆️ הסלמה לנפה ראשית</span>
-        <button onclick="document.getElementById('escalateModal').classList.remove('show')" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+        <button onclick="closeEscalateModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
       </div>
-      <div class="form-group" style="margin-bottom: 16px;">
-        <label>מה הגיל שלך? *</label>
-        <input type="number" id="escalateAge" placeholder="גיל" min="1" max="120" style="margin:0;">
-      </div>
-      <button class="btn-primary" onclick="confirmEscalate()">הסלם תקלה</button>
+      <div id="escalateSteps"></div>
     </div>
   </div>
 
@@ -1068,6 +1238,17 @@
     </div>
   </div>
 
+  <!-- Messages History Modal -->
+  <div id="messagesModal" class="modal" onclick="if(event.target===this) toggleMessagesModal()">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>💬 היסטוריית הודעות</span>
+        <button onclick="toggleMessagesModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:#999; padding:0; line-height:1;">✕</button>
+      </div>
+      <div id="messagesHistoryList" style="max-height: 500px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
   <!-- People Management Modal -->
   <div id="peopleModal" class="modal" onclick="if(event.target===this) togglePeopleModal()">
     <div class="modal-content" style="max-width: 400px;">
@@ -1093,6 +1274,7 @@
     let adminToken = null
     let adminTokenBranch = null
     let apiBase = ''  // path prefix for API calls, e.g. '/gdor'
+    const BRANCHES_MAP = { main: 'admin', A: 'admin_a', M: 'admin_m', H: 'admin_h', G: 'admin_g' }
     let ticketInterval = null
     let currentPage = 1
     const PAGE_SIZE = 10
@@ -1197,6 +1379,72 @@
       // Restore values
       techSelect.value = techVal
       assigneeSelect.value = assigneeVal
+    }
+
+    function toggleMessagesModal() {
+      const modal = document.getElementById('messagesModal')
+      modal.classList.toggle('show')
+      if (modal.classList.contains('show')) {
+        msgHistoryPage = 1
+        renderMessagesHistory()
+      }
+    }
+
+    let msgHistoryPage = 1
+    const MSG_HISTORY_PAGE_SIZE = 5
+
+    function renderMessagesHistory() {
+      const container = document.getElementById('messagesHistoryList')
+      const ticketsWithMessages = tickets.filter(t => t.messages && t.messages.length > 0)
+        .sort((a, b) => {
+          const aTime = a.messages[a.messages.length - 1].timestamp
+          const bTime = b.messages[b.messages.length - 1].timestamp
+          return new Date(bTime) - new Date(aTime)
+        })
+
+      if (ticketsWithMessages.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">אין הודעות</div>'
+        return
+      }
+
+      const totalPages = Math.ceil(ticketsWithMessages.length / MSG_HISTORY_PAGE_SIZE)
+      if (msgHistoryPage > totalPages) msgHistoryPage = totalPages
+      const start = (msgHistoryPage - 1) * MSG_HISTORY_PAGE_SIZE
+      const page = ticketsWithMessages.slice(start, start + MSG_HISTORY_PAGE_SIZE)
+
+      let html = page.map(t => {
+        const lastMsg = t.messages[t.messages.length - 1]
+        const time = new Date(lastMsg.timestamp).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        const preview = lastMsg.sender === 'system' ? '📋 הודעת מערכת' : (lastMsg.text.length > 30 ? lastMsg.text.substring(0, 30) + '...' : lastMsg.text)
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 10px; margin-bottom: 6px; background: #fafafa; border: 1px solid #eee; cursor: pointer;" onclick="openChatFromHistory('${t.id}')">
+            <div>
+              <div style="font-weight: 600; font-size: 14px; color: #e67e22;">💬 ${t.id}</div>
+              <div style="font-size: 12px; color: #888; margin-top: 2px;">${lastMsg.branch}: ${preview}</div>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-size: 11px; color: #aaa;">${time}</div>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">${t.messages.length} הודעות</div>
+            </div>
+          </div>`
+      }).join('')
+
+      if (totalPages > 1) {
+        html += `<div style="display:flex; justify-content:center; align-items:center; gap:8px; margin-top:12px;">
+          <button class="page-btn" onclick="msgHistoryPage--; renderMessagesHistory()" ${msgHistoryPage === 1 ? 'disabled' : ''}>&rsaquo;</button>
+          <span style="font-size:13px; color:#888;">${msgHistoryPage} / ${totalPages}</span>
+          <button class="page-btn" onclick="msgHistoryPage++; renderMessagesHistory()" ${msgHistoryPage === totalPages ? 'disabled' : ''}>&lsaquo;</button>
+        </div>`
+      }
+
+      container.innerHTML = html
+    }
+
+    function openChatFromHistory(ticketId) {
+      const ticket = tickets.find(t => t.id === ticketId)
+      if (!ticket) return
+      toggleMessagesModal()
+      openChatForTicketId(ticketId, ticket)
     }
 
     function togglePeopleModal() {
@@ -1424,6 +1672,10 @@
           await loadConfig()
           loadTickets()
           ticketInterval = setInterval(loadTickets, 5000)
+          // Start global chat polling
+          knownMessageCounts = {}
+          pollChatUpdates() // initial load to set counts
+          chatPollInterval = setInterval(pollChatUpdates, 3000)
 
           // Switch to admin panel
           switchTab(1)
@@ -1450,6 +1702,10 @@
       knownTicketIds = null
       unacknowledgedCount = 0
       stopRepeatingAlert()
+      if (chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null }
+      knownMessageCounts = {}
+      openChats = {}
+      document.getElementById('chatTray').innerHTML = ''
       if (ticketInterval) clearInterval(ticketInterval)
 
       // Hide admin nav, show login icon
@@ -1570,6 +1826,8 @@
         'פתוח': tickets.filter(t => t.status === 'פתוח').length,
         'בעבודה': tickets.filter(t => t.status === 'בעבודה').length,
         'בהמתנה': tickets.filter(t => t.status === 'בהמתנה').length,
+        'בטיפול נפה ממונה': tickets.filter(t => t.status === 'בטיפול נפה ממונה').length,
+        'טופל ע״י נפה ממונה': tickets.filter(t => t.status === 'טופל ע״י נפה ממונה').length,
         'סגור': tickets.filter(t => t.status === 'סגור').length,
       }
 
@@ -1587,6 +1845,14 @@
         <div class="dash-card dash-hold ${currentFilter === 'בהמתנה' ? 'active' : ''}" onclick="filterByDashboard('בהמתנה')">
           <div class="dash-card-count">${counts['בהמתנה']}</div>
           <div class="dash-card-label">בהמתנה</div>
+        </div>
+        <div class="dash-card" style="background:#fff3e0;color:#e65100; ${currentFilter === 'בטיפול נפה ממונה' ? 'border:1.5px solid #e67e22;box-shadow:0 0 0 3px rgba(230,126,34,0.15);' : ''}" onclick="filterByDashboard('בטיפול נפה ממונה')">
+          <div class="dash-card-count" style="color:#e65100;">${counts['בטיפול נפה ממונה']}</div>
+          <div class="dash-card-label"><span style="color:#e53935;">▲</span> הוסלם</div>
+        </div>
+        <div class="dash-card" style="background:#e3f2fd;color:#1565c0; ${currentFilter === 'טופל ע״י נפה ממונה' ? 'border:1.5px solid #1565c0;box-shadow:0 0 0 3px rgba(21,101,192,0.15);' : ''}" onclick="filterByDashboard('טופל ע״י נפה ממונה')">
+          <div class="dash-card-count" style="color:#1565c0;">${counts['טופל ע״י נפה ממונה']}</div>
+          <div class="dash-card-label"><span style="color:#2e7d32;">▼</span> הוחזר</div>
         </div>
         <div class="dash-card dash-closed ${currentFilter === 'סגור' ? 'active' : ''}" onclick="filterByDashboard('סגור')">
           <div class="dash-card-count">${counts['סגור']}</div>
@@ -1664,6 +1930,8 @@
       if (ticket.status.includes('סגור')) return 'status-badge-closed'
       if (ticket.status.includes('בהמתנה')) return 'status-badge-hold'
       if (ticket.status.includes('בעבודה')) return 'status-badge-progress'
+      if (ticket.status.includes('בטיפול נפה ממונה')) return 'status-badge-escalated'
+      if (ticket.status.includes('טופל ע״י נפה ממונה')) return 'status-badge-returned'
       return 'status-badge-open'
     }
 
@@ -1752,7 +2020,7 @@
           <tbody>
             ${pageTickets.map(ticket => `
               <tr onclick="openModal('${ticket.id}')">
-                <td style="font-weight:600; color:#e67e22; white-space:nowrap;">${ticket.escalatedTo ? '⬆️ ' : ''}${ticket.id}</td>
+                <td style="font-weight:600; color:#e67e22; white-space:nowrap;">${ticket.escalationStatus === 'בטיפול נפה ממונה' ? '<span style="color:#e53935;">▲</span> ' : ticket.escalationStatus === 'טופל ע״י נפה ממונה' ? '<span style="color:#2e7d32;">▼</span> ' : ''}${ticket.id}</td>
                 <td><span class="status-badge ${getStatusBadgeClass(ticket)}">${ticket.status}</span></td>
                 <td>${ticket.name}</td>
                 <td>${ticket.phone || '-'}</td>
@@ -1802,7 +2070,6 @@
       document.getElementById('modalEquipmentType').value = selectedTicket.equipmentType || ''
       document.getElementById('modalFaultType').value = selectedTicket.faultType || ''
       document.getElementById('modalPhone').value = selectedTicket.phone || ''
-      document.getElementById('modalStatus').value = selectedTicket.status
       document.getElementById('modalNotes').value = selectedTicket.notes?.join('\n') || ''
       document.getElementById('modalDescription').textContent = selectedTicket.description
 
@@ -1812,78 +2079,380 @@
       const notesField = document.getElementById('modalNotes')
       const saveBtn = document.querySelector('.modal-footer .btn-primary')
       const deleteBtn = document.querySelector('.modal-footer .btn-danger')
+      const escalateBtn = document.getElementById('escalateBtn')
+      const escalationBadge = document.getElementById('escalationBadge')
+      const deescalateBtn = document.getElementById('deescalateBtn')
       const adminBranch = adminToken ? (adminTokenBranch || 'main') : 'main'
       const isEscalatedToMain = selectedTicket.escalatedTo === 'main' && adminBranch === 'main'
       const isEscalatedSubBranch = selectedTicket.escalatedTo === 'main' && adminBranch !== 'main'
 
-      if (isEscalatedToMain) {
-        // Main viewing escalated: show techOnCall as plain text, not editable
-        const techValue = selectedTicket.techOnCall
-        if (techValue) {
-          // Replace dropdown with a disabled input showing the name
-          techSelect.innerHTML = `<option value="${techValue}">${techValue} (נפה)</option>`
-          techSelect.value = techValue
-        } else {
-          techSelect.value = ''
-        }
-        techSelect.disabled = true
-      } else {
-        techSelect.value = selectedTicket.techOnCall || ''
-        techSelect.disabled = false
+      // Reset all to default state
+      statusSelect.disabled = false
+      techSelect.disabled = false
+      assigneeSelect.disabled = false
+      notesField.disabled = false
+      saveBtn.style.display = ''
+      deleteBtn.style.display = ''
+      escalateBtn.style.display = 'none'
+      escalationBadge.style.display = 'none'
+      deescalateBtn.style.display = 'none'
+      document.getElementById('viewAnswersBtn').style.display = 'none'
+      document.getElementById('answersView').style.display = 'none'
+
+      // Show answers button if ticket has escalation answers
+      const hasAnswers = selectedTicket.escalationAnswers && selectedTicket.escalationAnswers !== '' && selectedTicket.escalationAnswers !== 'null'
+      if (hasAnswers) {
+        document.getElementById('viewAnswersBtn').style.display = 'block'
       }
 
+      // Restore normal status options
+      populateSelects()
+
+      const escStatus = selectedTicket.escalationStatus
+      const isActivelyEscalated = escStatus === 'בטיפול נפה ממונה'
+      const isReturned = escStatus === 'טופל ע״י נפה ממונה' && selectedTicket.status === 'טופל ע״י נפה ממונה'
+
+      techSelect.value = selectedTicket.techOnCall || ''
       assigneeSelect.value = selectedTicket.assignee || ''
 
-      if (isEscalatedSubBranch) {
-        // Sub-branch viewing their escalated ticket: lock everything
-        // Show assignee even if not in sub-branch people list
-        const assigneeValue = selectedTicket.assignee
-        if (assigneeValue && !Array.from(assigneeSelect.options).some(o => o.value === assigneeValue)) {
+      // Helper: ensure a person appears in a select even if not in current branch's people
+      function ensureOption(select, value, suffix) {
+        if (value && !Array.from(select.options).some(o => o.value === value)) {
           const opt = document.createElement('option')
-          opt.value = assigneeValue
-          opt.textContent = assigneeValue + ' (ראשית)'
-          assigneeSelect.appendChild(opt)
+          opt.value = value
+          opt.textContent = value + ' (' + suffix + ')'
+          select.appendChild(opt)
+        }
+      }
+
+      if (isActivelyEscalated && adminBranch === 'main') {
+        // Main viewing actively escalated ticket
+        statusSelect.innerHTML = `<option value="בטיפול נפה ממונה">⬆️ בטיפול נפה ממונה</option>`
+        statusSelect.disabled = true
+
+        // Lock techOnCall from sub-branch
+        const techValue = selectedTicket.techOnCall
+        if (techValue) {
+          techSelect.innerHTML = `<option value="${techValue}">${techValue} (נפה)</option>`
+          techSelect.value = techValue
+        }
+        techSelect.disabled = true
+
+        // Show sub-branch assignee if set, but main can always change
+        const assigneeValue = selectedTicket.assignee
+        if (assigneeValue) {
+          ensureOption(assigneeSelect, assigneeValue, 'נפה')
         }
         assigneeSelect.value = assigneeValue || ''
+        assigneeSelect.disabled = false
 
+        deleteBtn.style.display = 'none'
+        escalationBadge.innerHTML = '<span style="color:#e53935;">▲</span> בטיפול נפה ממונה'
+        escalationBadge.style.display = 'block'
+        deescalateBtn.style.display = 'block'
+
+      } else if (isActivelyEscalated && adminBranch !== 'main') {
+        // Sub-branch viewing actively escalated - locked
+        ensureOption(assigneeSelect, selectedTicket.assignee, 'ראשית')
+        assigneeSelect.value = selectedTicket.assignee || ''
+
+        statusSelect.innerHTML = `<option value="בטיפול נפה ממונה">בטיפול נפה ממונה</option>`
+        statusSelect.value = 'בטיפול נפה ממונה'
+
+        escalationBadge.innerHTML = '<span style="color:#e53935;">▲</span> בטיפול נפה ממונה'
+        escalationBadge.style.display = 'block'
         statusSelect.disabled = true
         techSelect.disabled = true
         assigneeSelect.disabled = true
         notesField.disabled = true
         saveBtn.style.display = 'none'
         deleteBtn.style.display = 'none'
+
+      } else if (isReturned && adminBranch === 'main') {
+        // Main viewing returned ticket - read only
+        statusSelect.innerHTML = `<option value="טופל ע״י נפה ממונה">⬇️ טופל ע״י נפה ממונה</option>`
+        statusSelect.disabled = true
+
+        const techValue = selectedTicket.techOnCall
+        if (techValue) {
+          techSelect.innerHTML = `<option value="${techValue}">${techValue} (נפה)</option>`
+          techSelect.value = techValue
+        }
+        techSelect.disabled = true
+
+        ensureOption(assigneeSelect, selectedTicket.assignee, 'נפה')
+        assigneeSelect.value = selectedTicket.assignee || ''
+        assigneeSelect.disabled = true
+        notesField.disabled = true
+        saveBtn.style.display = 'none'
+        deleteBtn.style.display = 'none'
+
+        escalationBadge.innerHTML = '<span style="color:#2e7d32;">▼</span> טופל ע״י נפה ממונה'
+        escalationBadge.style.display = 'block'
+
+      } else if (isReturned && adminBranch !== 'main') {
+        // Sub-branch viewing returned ticket - full control, can re-escalate
+        const opt = document.createElement('option')
+        opt.value = 'טופל ע״י נפה ממונה'
+        opt.textContent = 'טופל ע״י נפה ממונה'
+        statusSelect.appendChild(opt)
+        statusSelect.value = selectedTicket.status
+
+        // Show assignee from main if set, even if not in sub-branch people
+        ensureOption(assigneeSelect, selectedTicket.assignee, 'ראשית')
+        assigneeSelect.value = selectedTicket.assignee || ''
+
+        escalationBadge.innerHTML = '<span style="color:#2e7d32;">▼</span> טופל ע״י נפה ממונה'
+        escalationBadge.style.display = 'block'
+        escalateBtn.style.display = 'block'
+
+      } else if (adminBranch === 'main' && selectedTicket.escalatedTo && selectedTicket.escalationStatus === 'טופל ע״י נפה ממונה') {
+        // Main viewing ticket that was returned and sub-branch changed status - read only
+        statusSelect.value = selectedTicket.status
+        statusSelect.disabled = true
+
+        const techValue = selectedTicket.techOnCall
+        if (techValue) {
+          ensureOption(techSelect, techValue, 'נפה')
+          techSelect.value = techValue
+        }
+        techSelect.disabled = true
+
+        ensureOption(assigneeSelect, selectedTicket.assignee, 'נפה')
+        assigneeSelect.value = selectedTicket.assignee || ''
+        assigneeSelect.disabled = true
+        notesField.disabled = true
+        saveBtn.style.display = 'none'
+        deleteBtn.style.display = 'none'
+
       } else {
-        statusSelect.disabled = false
-        if (!isEscalatedToMain) techSelect.disabled = false
-        assigneeSelect.disabled = false
-        notesField.disabled = false
-        saveBtn.style.display = ''
-        deleteBtn.style.display = ''
+        // Normal ticket - full control
+        statusSelect.value = selectedTicket.status
+        if (adminBranch !== 'main') {
+          escalateBtn.style.display = 'block'
+        }
       }
 
-      // Show escalation button/badge
-      const escalateBtn = document.getElementById('escalateBtn')
-      const escalationBadge = document.getElementById('escalationBadge')
-
+      // Show chat button for escalated tickets
+      const openChatBtn = document.getElementById('openChatBtn')
       if (selectedTicket.escalatedTo) {
-        escalationBadge.style.display = 'block'
-        escalateBtn.style.display = 'none'
-      } else if (adminBranch !== 'main') {
-        escalationBadge.style.display = 'none'
-        escalateBtn.style.display = 'block'
+        openChatBtn.style.display = 'block'
       } else {
-        escalationBadge.style.display = 'none'
-        escalateBtn.style.display = 'none'
+        openChatBtn.style.display = 'none'
       }
 
       document.getElementById('editModal').classList.add('show')
     }
 
+    let chatRefreshInterval = null
+    let lastChatMessageCount = 0
+    let chatPollInterval = null
+    let knownMessageCounts = {}  // ticketId -> count
+
+    let openChats = {}  // ticketId -> { ticket, minimized }
+
     function closeModal() {
       document.getElementById('editModal').classList.remove('show')
-      selectedTicket = null
-      // Reset dropdowns to remove temporary options
       populatePeopleDropdowns()
+    }
+
+    function toggleChatWindow() {
+      if (!selectedTicket) return
+      const id = selectedTicket.id
+      if (openChats[id]) {
+        // Already open - toggle minimize
+        openChats[id].minimized = !openChats[id].minimized
+      } else {
+        // Open new chat
+        openChats[id] = { ticket: selectedTicket, minimized: false }
+      }
+      renderChatTray()
+    }
+
+    function openChatForTicketId(ticketId, ticket) {
+      if (openChats[ticketId]) {
+        // Already open - just un-minimize
+        openChats[ticketId].minimized = false
+        openChats[ticketId].ticket = ticket
+      } else {
+        openChats[ticketId] = { ticket, minimized: false }
+      }
+      renderChatTray()
+    }
+
+    function minimizeChat(ticketId) {
+      if (openChats[ticketId]) {
+        openChats[ticketId].minimized = !openChats[ticketId].minimized
+        renderChatTray()
+      }
+    }
+
+    function closeChat(ticketId) {
+      delete openChats[ticketId]
+      renderChatTray()
+    }
+
+    function buildMsgsHtml(msgs, myAdmin) {
+      if (!msgs || msgs.length === 0) {
+        return '<div style="text-align:center; color:#aaa; padding:40px 0; font-size:13px;">אין הודעות עדיין</div>'
+      }
+      return msgs.map(m => {
+        const time = new Date(m.timestamp).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })
+        if (m.sender === 'system') {
+          return `<div style="align-self:center; background:#f0f0f0; color:#555; padding:10px 14px; border-radius:10px; font-size:12px; white-space:pre-line; max-width:95%; line-height:1.6; text-align:right;">
+            ${m.text}
+            <div class="chat-msg-time">${time}</div>
+          </div>`
+        }
+        const isMine = m.sender === myAdmin
+        return `<div class="chat-msg ${isMine ? 'chat-msg-mine' : 'chat-msg-other'}">
+          <div class="chat-msg-sender">${m.branch}</div>
+          <div>${m.text}</div>
+          <div class="chat-msg-time">${time}</div>
+        </div>`
+      }).join('')
+    }
+
+    function renderChatTray() {
+      const tray = document.getElementById('chatTray')
+      const myAdmin = adminTokenBranch ? BRANCHES_MAP[adminTokenBranch] : 'admin'
+      const currentIds = Object.keys(openChats)
+
+      // Remove closed chats
+      tray.querySelectorAll('.chat-window').forEach(el => {
+        const id = el.dataset.ticketId
+        if (!openChats[id]) el.remove()
+      })
+
+      // Add or update each chat
+      currentIds.forEach(id => {
+        const chat = openChats[id]
+        const t = chat.ticket
+        const isClosed = t.status === 'סגור'
+        let el = tray.querySelector(`[data-ticket-id="${id}"]`)
+
+        if (!el) {
+          // Create new chat window
+          el = document.createElement('div')
+          el.className = 'chat-window'
+          el.dataset.ticketId = id
+          el.innerHTML = `
+            <div class="chat-header" onclick="minimizeChat('${id}')">
+              <span>💬 ${id}</span>
+              <div class="chat-header-btns">
+                <button class="min-btn" onclick="event.stopPropagation(); minimizeChat('${id}')">▼</button>
+                <button onclick="event.stopPropagation(); closeChat('${id}')">✕</button>
+              </div>
+            </div>
+            <div class="chat-body">
+              <div class="chat-messages" id="chatMsgs_${id}"></div>
+              <div class="chat-input-area">
+                <input type="text" id="chatInput_${id}" placeholder="${isClosed ? 'הצ׳אט נעול - התקלה נסגרה' : 'כתוב הודעה...'}" ${isClosed ? 'disabled' : ''} onkeydown="if(event.key==='Enter') sendChatMsg('${id}')">
+                <button class="btn-primary" onclick="sendChatMsg('${id}')" ${isClosed ? 'disabled' : ''}>➤</button>
+              </div>
+            </div>`
+          tray.appendChild(el)
+        }
+
+        // Update minimize state
+        el.classList.toggle('minimized', chat.minimized)
+        el.querySelector('.min-btn').textContent = chat.minimized ? '▲' : '▼'
+
+        // Update messages only
+        const msgsEl = document.getElementById('chatMsgs_' + id)
+        if (msgsEl) {
+          const wasAtBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 30
+          msgsEl.innerHTML = buildMsgsHtml(t.messages || [], myAdmin)
+          if (wasAtBottom) msgsEl.scrollTop = msgsEl.scrollHeight
+        }
+      })
+    }
+
+    async function pollChatUpdates() {
+      if (!adminToken) return
+      try {
+        const res = await fetch(apiBase + '/api/chat/updates', {
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        })
+        if (!res.ok) return
+        const { updates, myAdmin } = await res.json()
+        let needsRerender = false
+
+        for (const u of updates) {
+          const prevCount = knownMessageCounts[u.ticketId] || 0
+
+          // Update open chat windows with new messages
+          if (openChats[u.ticketId] && u.messageCount > prevCount) {
+            const ticketRes = await fetch(`${apiBase}/api/tickets/${u.ticketId}`, {
+              headers: { 'Authorization': 'Bearer ' + adminToken }
+            })
+            if (ticketRes.ok) {
+              openChats[u.ticketId].ticket = await ticketRes.json()
+              needsRerender = true
+            }
+          }
+
+          // New message from other branch - play sound and auto-open
+          if (u.messageCount > prevCount && prevCount > 0 && u.lastSender !== myAdmin) {
+            playChatSound()
+            if (!openChats[u.ticketId]) {
+              const ticketRes = await fetch(`${apiBase}/api/tickets/${u.ticketId}`, {
+                headers: { 'Authorization': 'Bearer ' + adminToken }
+              })
+              if (ticketRes.ok) {
+                const ticket = await ticketRes.json()
+                openChats[u.ticketId] = { ticket, minimized: false }
+                needsRerender = true
+              }
+            } else {
+              openChats[u.ticketId].minimized = false
+              needsRerender = true
+            }
+          }
+
+          knownMessageCounts[u.ticketId] = u.messageCount
+        }
+
+        if (needsRerender) renderChatTray()
+      } catch (e) {}
+    }
+
+    function playChatSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.value = 600
+      osc.type = 'sine'
+      gain.gain.setValueAtTime(0.15, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.15)
+    }
+
+    async function sendChatMsg(ticketId) {
+      const input = document.getElementById('chatInput_' + ticketId)
+      if (!input) return
+      const text = input.value.trim()
+      if (!text) return
+
+      try {
+        const res = await fetch(`${apiBase}/api/tickets/${ticketId}/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({ text })
+        })
+        if (res.ok) {
+          input.value = ''
+          const data = await res.json()
+          if (openChats[ticketId]) {
+            openChats[ticketId].ticket.messages = data.messages
+            knownMessageCounts[ticketId] = data.messages.length
+            renderChatTray()
+          }
+        }
+      } catch (e) {}
     }
 
     async function saveTicket() {
@@ -1902,16 +2471,31 @@
 
     async function doSaveTicket(extra) {
       try {
-        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
-          body: JSON.stringify({
+        const adminBranch = adminTokenBranch || 'main'
+        const isEscalatedToMain = selectedTicket.escalatedTo === 'main' && adminBranch === 'main'
+
+        let body
+        if (isEscalatedToMain) {
+          // Main can only change assignee and notes
+          body = {
+            assignee: document.getElementById('modalAssignee').value,
+            notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim()),
+            ...extra
+          }
+        } else {
+          body = {
             status: document.getElementById('modalStatus').value,
             techOnCall: document.getElementById('modalTechOnCall').value,
             assignee: document.getElementById('modalAssignee').value,
             notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim()),
             ...extra
-          })
+          }
+        }
+
+        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify(body)
         })
         await loadTickets()
         closeModal()
@@ -1936,15 +2520,169 @@
       document.getElementById('modalStatus').value = selectedTicket.status
     }
 
+    async function deescalateTicket() {
+      if (!selectedTicket || !confirm('להחזיר את התקלה לנפה?')) return
+      try {
+        // Save current changes first
+        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
+          body: JSON.stringify({
+            escalationStatus: 'טופל על ידי נפה ממונה',
+            assignee: document.getElementById('modalAssignee').value,
+            notes: document.getElementById('modalNotes').value.split('\n').filter(n => n.trim())
+          })
+        })
+        // Then de-escalate
+        const res = await fetch(`${apiBase}/api/tickets/${selectedTicket.id}/deescalate`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + adminToken }
+        })
+        if (res.ok) {
+          closeModal()
+          await loadTickets()
+          showSuccess('↩️ תקלה הוחזרה לנפה בהצלחה!')
+        } else {
+          const data = await res.json()
+          alert(data.error || 'שגיאה')
+        }
+      } catch (e) {
+        alert('שגיאת תקשורת')
+      }
+    }
+
+    const GUIDE_PATH = '\\\\שרת-קבצים\\תקשוב\\מדריכים\\עץ-הדר\\תקלות-נפוצות'
+    let escalationAnswers = {}
+
     function showEscalateModal() {
-      document.getElementById('escalateAge').value = ''
+      // First escalation: show questionnaire. Re-escalation: skip
+      if (selectedTicket.escalationAnswers) {
+        // Re-escalation - skip questionnaire
+        doEscalate(null)
+        return
+      }
+      escalationAnswers = {}
+      showEscalateStep1()
       document.getElementById('escalateModal').classList.add('show')
     }
 
-    async function confirmEscalate() {
-      const age = document.getElementById('escalateAge').value
-      if (!age) { alert('יש להזין גיל'); return }
+    function closeEscalateModal() {
+      document.getElementById('escalateModal').classList.remove('show')
+    }
 
+    function showEscalateStep1() {
+      document.getElementById('escalateSteps').innerHTML = `
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="font-size:15px; font-weight:600; margin-bottom:12px;">האם התקלה גורפת?</label>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-primary" onclick="escalateStep1Answer(true)" style="flex:1;">כן</button>
+            <button class="btn-secondary" onclick="escalateStep1Answer(false)" style="flex:1;">לא</button>
+          </div>
+        </div>`
+    }
+
+    function escalateStep1Answer(isGoreft) {
+      escalationAnswers.isGoreft = isGoreft
+      if (isGoreft) {
+        // Goreft - ask what was tested
+        document.getElementById('escalateSteps').innerHTML = `
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:14px; font-weight:600; color:#e65100;">✅ תקלה גורפת</label>
+            <label style="margin-top:12px;">מה נבדק ומה נשלל כדי לקבוע שהתקלה גורפת? *</label>
+            <textarea id="escalateGoreftDetails" style="min-height:100px;" placeholder="פרט/י את הבדיקות שבוצעו..."></textarea>
+          </div>
+          <button class="btn-primary" onclick="submitGoreft()">הסלם תקלה</button>`
+      } else {
+        showEscalateStep2()
+      }
+    }
+
+    function submitGoreft() {
+      const details = document.getElementById('escalateGoreftDetails').value.trim()
+      if (!details) { alert('יש למלא את הפרטים'); return }
+      escalationAnswers.goreftDetails = details
+      doEscalate(escalationAnswers)
+    }
+
+    function showEscalateStep2() {
+      document.getElementById('escalateSteps').innerHTML = `
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="font-size:15px; font-weight:600; margin-bottom:8px;">האם קראת את המדריך שנמצא בעץ הדר לתקלות נפוצות?</label>
+          <div style="padding:10px 14px; background:#f5f5f5; border:1px solid #e0e0e0; border-radius:8px; margin:8px 0 12px; font-size:12px; color:#666; direction:ltr; text-align:left; word-break:break-all;">📁 ${GUIDE_PATH}</div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-primary" onclick="escalateStep2Answer(true)" style="flex:1;">כן, קראתי</button>
+            <button class="btn-secondary" onclick="escalateStep2Answer(false)" style="flex:1;">לא</button>
+          </div>
+        </div>`
+    }
+
+    function escalateStep2Answer(didRead) {
+      escalationAnswers.didReadGuide = didRead
+      if (!didRead) {
+        document.getElementById('escalateSteps').innerHTML = `
+          <div style="text-align:center; padding:20px 0;">
+            <div style="font-size:40px; margin-bottom:12px;">📖</div>
+            <div style="font-size:15px; font-weight:600; margin-bottom:12px; color:#e65100;">יש לקרוא את המדריך לפני הסלמה</div>
+            <div style="padding:10px 14px; background:#f5f5f5; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:16px; font-size:12px; color:#666; direction:ltr; text-align:left; word-break:break-all;">📁 ${GUIDE_PATH}</div>
+            <p style="font-size:13px; color:#888;">קרא/י את המדריך, נסה/י את הפתרונות המוצעים, ולאחר מכן נסה/י שוב.</p>
+            <button class="btn-secondary" onclick="closeEscalateModal()" style="margin-top:12px;">סגור</button>
+          </div>`
+        return
+      }
+      showEscalateStep3()
+    }
+
+    function showEscalateStep3() {
+      document.getElementById('escalateSteps').innerHTML = `
+        <div class="form-group" style="margin-bottom:16px;">
+          <label style="font-size:15px; font-weight:600; margin-bottom:12px;">קראתי את המדריך, מה התוצאה?</label>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <button class="btn-secondary" onclick="escalateStep3Answer('not_helped')" style="text-align:right; padding:12px 16px;">
+              ביצעתי את ההוראות במדריך ולא עזר
+            </button>
+            <button class="btn-secondary" onclick="escalateStep3Answer('guide_missing')" style="text-align:right; padding:12px 16px;">
+              המדריך חסר מידע לגבי תקלה זו
+            </button>
+          </div>
+        </div>`
+    }
+
+    function escalateStep3Answer(result) {
+      escalationAnswers.guideResult = result
+      if (result === 'not_helped') {
+        document.getElementById('escalateSteps').innerHTML = `
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:14px; font-weight:600; color:#e65100;">📖 ביצעתי את ההוראות ולא עזר</label>
+            <label style="margin-top:12px;">מה נבדק ומה נשלל? *</label>
+            <textarea id="escalateTestedDetails" style="min-height:100px;" placeholder="פרט/י את הבדיקות שבוצעו והשלילות..."></textarea>
+          </div>
+          <button class="btn-primary" onclick="submitTested()">הסלם תקלה</button>`
+      } else {
+        document.getElementById('escalateSteps').innerHTML = `
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:14px; font-weight:600; color:#e65100;">📖 המדריך חסר מידע</label>
+            <label style="margin-top:12px;">מה חסר במדריך? *</label>
+            <textarea id="escalateGuideGap" style="min-height:100px;" placeholder="פרט/י מה חסר או מה לא מכוסה במדריך..."></textarea>
+          </div>
+          <button class="btn-primary" onclick="submitGuideGap()">הסלם תקלה</button>`
+      }
+    }
+
+    function submitTested() {
+      const details = document.getElementById('escalateTestedDetails').value.trim()
+      if (!details) { alert('יש למלא את הפרטים'); return }
+      escalationAnswers.testedDetails = details
+      doEscalate(escalationAnswers)
+    }
+
+    function submitGuideGap() {
+      const gap = document.getElementById('escalateGuideGap').value.trim()
+      if (!gap) { alert('יש למלא את הפרטים'); return }
+      escalationAnswers.guideGap = gap
+      doEscalate(escalationAnswers)
+    }
+
+    async function doEscalate(answers) {
       try {
         // Save ticket first
         await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, {
@@ -1962,11 +2700,11 @@
         const res = await fetch(`${apiBase}/api/tickets/${selectedTicket.id}/escalate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + adminToken },
-          body: JSON.stringify({ age: parseInt(age) })
+          body: JSON.stringify({ answers })
         })
         const data = await res.json()
         if (res.ok) {
-          document.getElementById('escalateModal').classList.remove('show')
+          closeEscalateModal()
           closeModal()
           await loadTickets()
           showSuccess('⬆️ תקלה הוסלמה לנפה ראשית בהצלחה!')
@@ -1978,12 +2716,48 @@
       }
     }
 
+    function toggleAnswersView() {
+      const view = document.getElementById('answersView')
+      if (view.style.display === 'none') {
+        if (!selectedTicket.escalationAnswers) return
+        const a = typeof selectedTicket.escalationAnswers === 'string' ? JSON.parse(selectedTicket.escalationAnswers) : selectedTicket.escalationAnswers
+        let text = ''
+        if (a.isGoreft) {
+          text += '🔴 תקלה גורפת: כן\n'
+          text += '📝 פרטים: ' + (a.goreftDetails || '') + '\n'
+        } else {
+          text += '🟢 תקלה גורפת: לא\n'
+          text += '📖 קרא מדריך: ' + (a.didReadGuide ? 'כן' : 'לא') + '\n'
+          if (a.guideResult === 'not_helped') {
+            text += '❌ תוצאה: ביצע הוראות - לא עזר\n'
+            text += '📝 מה נבדק: ' + (a.testedDetails || '') + '\n'
+          } else if (a.guideResult === 'guide_missing') {
+            text += '⚠️ תוצאה: המדריך חסר מידע\n'
+            text += '📝 מה חסר: ' + (a.guideGap || '') + '\n'
+          }
+        }
+        view.textContent = text
+        view.style.display = 'block'
+      } else {
+        view.style.display = 'none'
+      }
+    }
+
     async function deleteTicket() {
       if (!selectedTicket || !confirm('האם אתה בטוח שברצונך למחוק כרטיס זה?')) return
       try {
-        await fetch(`${apiBase}/api/tickets/${selectedTicket.id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + adminToken } })
+        const deletedId = selectedTicket.id
+        await fetch(`${apiBase}/api/tickets/${deletedId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + adminToken } })
+        // Close chat if open for this ticket
+        if (openChats[deletedId]) {
+          delete openChats[deletedId]
+          renderChatTray()
+        }
+        delete knownMessageCounts[deletedId]
+        selectedTicket = null
+        document.getElementById('editModal').classList.remove('show')
+        populatePeopleDropdowns()
         await loadTickets()
-        closeModal()
         showSuccess('✅ כרטיס נמחק בהצלחה!')
       } catch (e) {
         showError('❌ שגיאה במחיקת הכרטיס')
